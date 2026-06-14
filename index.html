@@ -51,6 +51,7 @@
         let clientId = localStorage.getItem('cyberClientId') || ("user_" + Math.random().toString(36).substring(7));
         localStorage.setItem('cyberClientId', clientId);
         let selectedChoice = -1;
+        let currentQIndex = -1; // Pour mémoriser la question en cours
 
         client.on('connect', () => {
             document.getElementById('status').innerText = "🟢 Connecté";
@@ -75,9 +76,20 @@
             const data = JSON.parse(msg.toString());
             
             if(data.type === 'STATE') {
+                currentQIndex = data.qIndex; // Sauvegarde l'index de la question envoyée par le GM
+                
                 if(data.phase === 'VOTING') {
-                    // Si c'est le tour de l'équipe OU si c'est la question bonus ('both')
-                    if(data.teamTurn === myTeam || data.teamTurn === 'both') {
+                    // Vérifie si le joueur a déjà voté pour cette question après un refresh
+                    let lastVotedQIndex = localStorage.getItem('lastVotedQIndex');
+
+                    if (lastVotedQIndex == currentQIndex) {
+                        // Il a déjà voté, on affiche le message d'attente
+                        document.getElementById('voting-area').classList.add('hidden');
+                        document.getElementById('waiting-msg').classList.remove('hidden');
+                        document.getElementById('waiting-msg').innerHTML = "✅ <strong>Action déjà validée !</strong><br><br>Regardez l'écran principal.";
+                    } 
+                    // Si c'est à son équipe de jouer (et qu'il n'a pas voté)
+                    else if(data.teamTurn === myTeam || data.teamTurn === 'both') {
                         document.getElementById('waiting-msg').classList.add('hidden');
                         document.getElementById('voting-area').classList.remove('hidden');
                         document.getElementById('btn-validate').classList.add('hidden');
@@ -91,10 +103,17 @@
                             btn.classList.remove('selected');
                         }
                     } else {
+                        // Ce n'est pas son tour
                         document.getElementById('voting-area').classList.add('hidden');
                         document.getElementById('waiting-msg').classList.remove('hidden');
                         document.getElementById('waiting-msg').innerText = "L'autre équipe joue. Observez l'écran principal !";
                     }
+                } 
+                else if (data.phase === 'RESULT' || data.phase === 'ANIMATION') {
+                    // Cache les boutons de vote si on est à l'étape des résultats/animations
+                    document.getElementById('voting-area').classList.add('hidden');
+                    document.getElementById('waiting-msg').classList.remove('hidden');
+                    document.getElementById('waiting-msg').innerHTML = "Observez l'écran principal !";
                 }
             }
         });
@@ -108,6 +127,9 @@
 
         function submitVote() {
             if(selectedChoice !== -1) {
+                // Sauvegarde qu'il a voté pour CETTE question pour résister au rafraîchissement
+                localStorage.setItem('lastVotedQIndex', currentQIndex);
+
                 client.publish(topic, JSON.stringify({ type: 'VOTE', team: myTeam, id: clientId, choice: selectedChoice }));
                 document.getElementById('voting-area').classList.add('hidden');
                 document.getElementById('waiting-msg').classList.remove('hidden');

@@ -149,16 +149,17 @@
                     
                     document.getElementById('question-text').innerText = data.question.text;
                     
-                    // CORRECTION BUG : Force le reset visuel total
                     for(let i=0; i<4; i++) {
                         let optBox = document.getElementById('disp-opt'+i);
                         optBox.innerText = String.fromCharCode(65+i) + ". " + data.options[i];
-                        optBox.style.cssText = "background-color: #1e293b; border-color: #334155;"; // Efface les anciennes couleurs
+                        optBox.style.cssText = "background-color: #1e293b; border-color: #334155;"; 
                     }
                 }
                 
                 if (data.phase === 'RESULT') {
-                    // Colore la bonne réponse
+                    qc.classList.remove('hidden'); // Assure que la div question est là si l'écran est refresh pendant le RESULT
+                    animLayer.style.display = 'none';
+                    
                     let correctBox = document.getElementById('disp-opt'+data.correctIndex);
                     correctBox.style.cssText = "background-color: #064e3b !important; border-color: #4ade80 !important;";
 
@@ -175,6 +176,7 @@
                 }
 
                 if (data.phase === 'ANIMATION') {
+                    qc.classList.remove('hidden'); // Laisse l'UI de base
                     animLayer.style.display = 'block'; 
                     document.querySelectorAll('.anim-window').forEach(el => el.style.display = 'none');
                     runAnimation(data.animType);
@@ -182,7 +184,7 @@
             }
         });
 
-        // --- MOTEUR D'ANIMATIONS ---
+        // --- MOTEUR D'ANIMATIONS (IDENTIQUE) ---
         async function runAnimation(type) {
             const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -196,21 +198,12 @@
             const urlBar = document.getElementById('browser-url');
             const mailWin = document.getElementById('win-mail');
 
-            // Reset UI
             term.innerHTML = ""; socLogs.innerHTML = ""; socAlert.style.display = "none"; web.innerHTML = "";
 
             if(type === 'nmap') {
                 termWin.style.display = "flex";
-                const lines = [
-                    "root@kali:~# nmap -sV -p- 185.22.44.1",
-                    "Starting Nmap 7.92...",
-                    "Scanning 185.22.44.1 [65535 ports]",
-                    "<span style='color:red'>[+] Discovered open port 80/tcp (http)</span>",
-                    "<span style='color:red'>[+] Discovered open port 22/tcp (ssh)</span>",
-                    "Nmap done: 1 IP scanned in 12.4 seconds."
-                ];
+                const lines = ["root@kali:~# nmap -sV -p- 185.22.44.1", "Starting Nmap 7.92...", "Scanning 185.22.44.1 [65535 ports]", "<span style='color:red'>[+] Discovered open port 80/tcp (http)</span>", "<span style='color:red'>[+] Discovered open port 22/tcp (ssh)</span>", "Nmap done: 1 IP scanned in 12.4 seconds."];
                 for(let l of lines) { term.innerHTML += l + "<br>"; await delay(600); }
-
             } else if(type === 'soc-block') {
                 socWin.style.display = "flex";
                 socLogs.innerHTML += "System OK. Listening for events...<br>"; await delay(1000);
@@ -218,31 +211,19 @@
                 socLogs.innerHTML += "<span style='color:#3b82f6'>[ACTION AUTOMATIQUE] Création règle iptables...</span><br>"; await delay(1000);
                 socLogs.innerHTML += "<span style='color:#4ade80'>[SUCCÈS] IP 104.22.1.8 bloquée. Menace neutralisée.</span><br>";
                 socAlert.innerHTML = "✅ MENACE ÉCARTÉE"; socAlert.style.background = "#064e3b"; socAlert.style.borderColor = "#4ade80";
-
             } else if (type === 'gobuster') {
                 webWin.style.display = "flex";
                 urlBar.innerText = "https://safetech.com";
                 web.innerHTML = "<h1>Bienvenue sur SafeTech</h1><p>Leader en innovation.</p>";
                 await delay(2000);
-                webWin.style.display = "none"; termWin.style.display = "flex"; // Switch to terminal
-                const lines = [
-                    "root@kali:~# gobuster dir -u https://safetech.com -w common.txt",
-                    "Starting gobuster...",
-                    "/.git/ (Status: 403)",
-                    "<span style='color:red'>/admin (Status: 200) [Size: 1043]</span>",
-                    "<span style='color:red'>/uploads (Status: 200) [Size: 40]</span>"
-                ];
+                webWin.style.display = "none"; termWin.style.display = "flex"; 
+                const lines = ["root@kali:~# gobuster dir -u https://safetech.com -w common.txt", "Starting gobuster...", "/.git/ (Status: 403)", "<span style='color:red'>/admin (Status: 200) [Size: 1043]</span>", "<span style='color:red'>/uploads (Status: 200) [Size: 40]</span>"];
                 for(let l of lines) { term.innerHTML += l + "<br>"; await delay(500); }
-
             } else if (type === 'soc-404') {
                 socWin.style.display = "flex";
-                for(let i=0; i<15; i++) {
-                    socLogs.innerHTML += `[${new Date().toLocaleTimeString()}] WARNING: HTTP 404 on /secret_dir from 104.22.1.8<br>`;
-                    await delay(100);
-                }
+                for(let i=0; i<15; i++) { socLogs.innerHTML += `[${new Date().toLocaleTimeString()}] WARNING: HTTP 404 on /secret_dir from 104.22.1.8<br>`; await delay(100); }
                 socAlert.style.display = "block"; socAlert.innerHTML = "⚠️ FAIL2BAN : ACTIVITÉ ANORMALE DÉTECTÉE (Trop de 404)"; await delay(1500);
                 socLogs.innerHTML += "<br><span style='color:#4ade80'>[FAIL2BAN] Banning IP 104.22.1.8 for 24 hours.</span><br>";
-                
             } else if (type === 'sqli') {
                 webWin.style.display = "flex";
                 urlBar.innerText = "https://safetech.com/admin";
@@ -255,13 +236,11 @@
                 web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>admin' OR 1=1 --</span><span class='fake-input'>***</span>";
                 await delay(1000);
                 web.innerHTML = "<h1 style='color:green'>🔓 DASHBOARD ADMINISTRATEUR CONNECTÉ</h1><p>Bienvenue SuperAdmin.</p>";
-
             } else if (type === 'soc-sqli') {
                 socWin.style.display = "flex";
                 socLogs.innerHTML += "Trafic Web normal...<br>"; await delay(1000);
                 socLogs.innerHTML += `[WAF] <span style='color:red'>SQL Injection Pattern Detected: "OR 1=1 --"</span><br>`; await delay(500);
                 socAlert.style.display = "block"; socAlert.innerHTML = "🛑 WAF: INJECTION SQL BLOQUÉE (IP: 104.22.1.8)";
-                
             } else if (type === 'reverse-shell') {
                 termWin.style.display = "flex";
                 term.innerHTML = "root@kali:~# nc -lvnp 4444<br>Listening on [0.0.0.0] (family 0, port 4444)<br>"; await delay(1500);
@@ -269,21 +248,18 @@
                 term.innerHTML += "ls -la<br>index.php<br>config.php<br><span style='color:yellow'>credentialSecure.txt</span><br>"; await delay(1500);
                 term.innerHTML += "www-data@safetech:/var/www/html$ cat credentialSecure.txt<br>"; await delay(1000);
                 term.innerHTML += "<span style='color:red; font-weight:bold; font-size:28px;'>ROOT_PASSWORD=SuperAdmin2026!!!</span><br>";
-
             } else if (type === 'soc-priv') {
                 socWin.style.display = "flex";
                 socLogs.innerHTML += "[IAM] User 'stagiaire_bob' logged in.<br>"; await delay(1000);
                 socLogs.innerHTML += "<span style='color:yellow'>[AUDIT] User 'stagiaire_bob' attempting to read /etc/shadow...</span><br>"; await delay(1000);
                 socAlert.style.display = "block"; socAlert.innerHTML = "🛡️ PRINCIPE DU MOINDRE PRIVILÈGE APPLIQUÉ";
                 socLogs.innerHTML += "<span style='color:#4ade80'>[DENIED] Permission refused for 'stagiaire_bob'. Session terminated.</span><br>";
-
             } else if (type === 'exfil') {
                 termWin.style.display = "flex";
                 term.innerHTML = "root@kali:~# python3 dns_exfiltrator.py --file plans_secrets_drone.pdf<br>"; await delay(1000);
                 term.innerHTML += "Encoding file to Base64...<br>Sending DNS queries...<br>"; await delay(500);
                 for(let i=1; i<=10; i++) { term.innerHTML += `<span style='color:yellow'>[+] Query ${i}/450 : ${Math.random().toString(36).substring(2)}.malicious-domain.com</span><br>`; await delay(150); }
                 term.innerHTML += "<span style='color:red; font-weight:bold;'>[✔] EXFILTRATION TERMINÉE. FICHIER RÉCUPÉRÉ.</span>";
-
             } else if (type === 'soc-incident') {
                 socWin.style.display = "flex";
                 socLogs.innerHTML += "Monitoring Outbound Traffic...<br>"; await delay(1000);
@@ -291,7 +267,6 @@
                 socAlert.style.animation = "blink 0.2s infinite"; await delay(1500);
                 socLogs.innerHTML += "<span style='color:red; font-weight:bold;'>[LOCKDOWN] KILLING ALL EXTERNAL CONNECTIONS.</span><br>"; await delay(1000);
                 socAlert.innerHTML = "🔒 RÉSEAU ISOLÉ. RÉPONSE À INCIDENT ACTIVÉE."; socAlert.style.animation = "none"; socAlert.style.background = "#0f172a";
-
             } else if (type === 'phishing') {
                 mailWin.style.display = "block";
             }
