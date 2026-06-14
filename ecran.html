@@ -161,7 +161,7 @@
 
     <script>
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
-        const topic = "campus-cyber-kahoot-kydryl-2026";
+        const topic = "campus-cyber-kahoot-kydryl-2026-v2";
         client.subscribe(topic);
 
         client.on('message', (t, msg) => {

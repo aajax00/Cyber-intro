@@ -57,7 +57,7 @@
 
     <script>
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { clean: false, clientId: 'tel_' + Math.random().toString(16).substr(2, 8) });
-        const topic = "campus-cyber-kahoot-kydryl-2026";
+        const topic = "campus-cyber-kahoot-kydryl-2026-v2";
         
         let myTeam = localStorage.getItem('cyberTeam') || "";
         let clientId = localStorage.getItem('cyberClientId') || ("user_" + Math.random().toString(36).substring(7));
