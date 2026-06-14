@@ -2,87 +2,158 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Global</title>
+    <title>Cyber Écran Principal</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body { background-color: #020617; color: white; font-family: monospace; padding: 40px; overflow: hidden; }
-        h1 { text-align: center; font-size: 3em; color: #22d3ee; }
+        body { background-color: #020617; color: white; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 40px; overflow: hidden; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 20px; }
+        h1 { margin: 0; color: #22d3ee; text-transform: uppercase; }
+        .counter { font-size: 24px; color: #4ade80; background: #0f172a; padding: 10px 20px; border-radius: 8px; border: 1px solid #4ade80; }
         
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-        .panel { background: #0f172a; padding: 20px; border-radius: 10px; border: 2px solid #334155; min-height: 400px; }
+        #question-container { margin-top: 50px; text-align: center; }
+        .turn-red { color: #ef4444; font-size: 2em; margin-bottom: 10px; }
+        .turn-blue { color: #3b82f6; font-size: 2em; margin-bottom: 10px; }
+        #question-text { font-size: 36px; margin: 20px 0; }
         
-        .panel-red { border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
-        .panel-blue { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: 40px auto; }
+        .opt-box { background: #1e293b; padding: 20px; font-size: 24px; border-radius: 10px; border: 2px solid #334155; }
         
-        h2 { text-align: center; }
-        .red-text { color: #ef4444; }
-        .blue-text { color: #3b82f6; }
+        #result-msg { font-size: 40px; margin-top: 20px; font-weight: bold; }
+        .success { color: #4ade80; } .fail { color: #ef4444; }
 
-        .log-list { list-style: none; padding: 0; font-size: 1.2em; }
-        .log-list li { padding: 10px; border-bottom: 1px solid #334155; animation: fadeIn 0.5s; }
-
-        /* Animation d'alerte sur l'écran */
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes flashRed { 0% { background-color: #020617; } 50% { background-color: #450a0a; } 100% { background-color: #020617; } }
-        @keyframes flashBlue { 0% { background-color: #020617; } 50% { background-color: #172554; } 100% { background-color: #020617; } }
-
-        .flash-red { animation: flashRed 0.5s; }
-        .flash-blue { animation: flashBlue 0.5s; }
+        /* Console Terminal pour les animations */
+        #terminal { background: #000; border: 1px solid #333; height: 300px; padding: 20px; margin-top: 40px; border-radius: 5px; text-align: left; overflow: hidden; display: none; }
+        .term-text { color: #0f0; line-height: 1.5; font-size: 18px; }
+        .term-red { color: #f00; }
+        
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>🖥️ SOC - Centre Opérationnel de Sécurité</h1>
-    <p style="text-align: center; color: #94a3b8; font-size: 1.5em;">En attente des actions des équipes...</p>
-
-    <div class="dashboard">
-        <div class="panel panel-red">
-            <h2 class="red-text">🔥 Activité RED TEAM (Attaque)</h2>
-            <ul id="logs-attaque" class="log-list"></ul>
-        </div>
-        
-        <div class="panel panel-blue">
-            <h2 class="blue-text">🛡️ Activité BLUE TEAM (Défense)</h2>
-            <ul id="logs-defense" class="log-list"></ul>
-        </div>
+    <div class="header">
+        <h1>Opération SafeTech</h1>
+        <div class="counter" id="voters-count">En attente de joueurs...</div>
     </div>
+
+    <div id="question-container" class="hidden">
+        <div id="turn-indicator"></div>
+        <div id="question-text"></div>
+        
+        <div class="options" id="options-grid">
+            <div class="opt-box" id="disp-opt0"></div>
+            <div class="opt-box" id="disp-opt1"></div>
+            <div class="opt-box" id="disp-opt2"></div>
+            <div class="opt-box" id="disp-opt3"></div>
+        </div>
+
+        <div id="result-msg"></div>
+    </div>
+
+    <div id="terminal"></div>
 
     <script>
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
-        const topic = "campus-cyber-kyndryl-2026-demo";
+        const topic = "campus-cyber-kahoot-kydryl-2026";
+        client.subscribe(topic);
 
-        client.on('connect', function () {
-            console.log("Connecté en tant qu'écran principal");
-            client.subscribe(topic);
-        });
-
-        // Dès qu'un téléphone appuie sur un bouton, ce code s'exécute
-        client.on('message', function (topic, message) {
-            const data = JSON.parse(message.toString());
-            const time = new Date().toLocaleTimeString();
+        client.on('message', (t, msg) => {
+            const data = JSON.parse(msg.toString());
             
-            if (data.team === 'attaque') {
-                document.body.classList.remove('flash-blue', 'flash-red');
-                void document.body.offsetWidth; // Reset animation
-                document.body.classList.add('flash-red');
+            if (data.type === 'VOTER_UPDATE') {
+                document.getElementById('voters-count').innerText = `${data.votes} / ${data.totalTeam} ont voté`;
+            }
+            
+            if (data.type === 'STATE') {
+                const qc = document.getElementById('question-container');
+                const term = document.getElementById('terminal');
+                
+                if (data.phase === 'VOTING') {
+                    qc.classList.remove('hidden');
+                    term.style.display = 'none';
+                    document.getElementById('result-msg').innerText = "";
+                    
+                    document.getElementById('turn-indicator').className = data.teamTurn === 'red' ? 'turn-red' : 'turn-blue';
+                    document.getElementById('turn-indicator').innerText = data.teamTurn === 'red' ? "🔥 AU TOUR DE LA RED TEAM 🔥" : "🛡️ AU TOUR DE LA BLUE TEAM 🛡️";
+                    
+                    document.getElementById('question-text').innerText = data.question.text;
+                    for(let i=0; i<4; i++) {
+                        document.getElementById('disp-opt'+i).innerText = String.fromCharCode(65+i) + ". " + data.options[i];
+                        document.getElementById('disp-opt'+i).style.borderColor = '#334155'; // Reset color
+                    }
+                }
+                
+                if (data.phase === 'RESULT') {
+                    // Highlight bonne reponse
+                    document.getElementById('disp-opt'+data.correctIndex).style.borderColor = '#4ade80';
+                    document.getElementById('disp-opt'+data.correctIndex).style.backgroundColor = '#064e3b';
 
-                const logList = document.getElementById('logs-attaque');
-                const li = document.createElement('li');
-                li.innerHTML = `[${time}] ⚠️ <strong>${data.action}</strong> détectée !`;
-                logList.prepend(li); // Ajoute en haut de la liste
+                    const rMsg = document.getElementById('result-msg');
+                    if(data.isSuccess) {
+                        rMsg.innerText = "✅ Majorité correcte ! Déploiement de l'action...";
+                        rMsg.className = "success";
+                    } else {
+                        rMsg.innerText = "❌ Échec. Mauvaise décision. Mais voici ce qu'il fallait faire...";
+                        rMsg.className = "fail";
+                    }
+                }
 
-            } else if (data.team === 'defense') {
-                document.body.classList.remove('flash-blue', 'flash-red');
-                void document.body.offsetWidth; // Reset animation
-                document.body.classList.add('flash-blue');
-
-                const logList = document.getElementById('logs-defense');
-                const li = document.createElement('li');
-                li.innerHTML = `[${time}] 🟢 <strong>${data.action}</strong> déployée.`;
-                logList.prepend(li);
+                if (data.phase === 'ANIMATION') {
+                    term.style.display = 'block';
+                    runAnimation(data.animType);
+                }
             }
         });
+
+        function runAnimation(type) {
+            const term = document.getElementById('terminal');
+            term.innerHTML = "";
+            let lines = [];
+
+            if(type === 'nmap') {
+                lines = [
+                    "<span class='term-text'>root@kali:~# nmap -sV -A 192.168.1.45</span>",
+                    "<span class='term-text'>Starting Nmap 7.92...</span>",
+                    "<span class='term-text'>Scanning 192.168.1.45 [1000 ports]</span>",
+                    "<span class='term-text'>Discovered open port 80/tcp on 192.168.1.45</span>",
+                    "<span class='term-text term-red'>Discovered open port 22/tcp on 192.168.1.45</span>",
+                    "<span class='term-text'>Nmap done: 1 IP address (1 host up) scanned in 3.42 seconds</span>"
+                ];
+            } else if(type === 'firewall') {
+                lines = [
+                    "<span class='term-text'>admin@soc:~# iptables -A INPUT -s 185.12.3.4 -j DROP</span>",
+                    "<span class='term-text'>Applying new rule...</span>",
+                    "<span class='term-text'>Analyzing traffic drop rate...</span>",
+                    "<span class='term-text'>[SUCCESS] All incoming traffic from attacker blocked.</span>"
+                ];
+            } else if (type === 'dirb') {
+                lines = [
+                    "<span class='term-text'>root@kali:~# gobuster dir -u http://192.168.1.45 -w common.txt</span>",
+                    "<span class='term-text'>Starting gobuster...</span>",
+                    "<span class='term-text'>/images (Status: 301)</span>",
+                    "<span class='term-text term-red'>/admin_dashboard (Status: 200) [Size: 4501]</span>",
+                    "<span class='term-text term-red'>/db_backup.sql (Status: 200) [Size: 104593]</span>"
+                ];
+            } else if (type === 'mfa') {
+                lines = [
+                    "<span class='term-text'>[ALERTE] Suspicious login on /admin_dashboard</span>",
+                    "<span class='term-text'>admin@soc:~# force_mfa_policy --all-users</span>",
+                    "<span class='term-text'>Updating Active Directory policies...</span>",
+                    "<span class='term-text'>[SUCCESS] Multi-Factor Authentication ENFORCED globally. Attacker locked out.</span>"
+                ];
+            }
+
+            // Effet machine à écrire
+            let i = 0;
+            function typeWriter() {
+                if (i < lines.length) {
+                    term.innerHTML += lines[i] + "<br>";
+                    i++;
+                    setTimeout(typeWriter, 800);
+                }
+            }
+            typeWriter();
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Control</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #e2e8f0; padding: 20px; }
+        .dashboard { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
+        h1, h3 { color: #0f172a; margin-top: 0; }
+        button { background: #3b82f6; color: white; border: none; padding: 15px; margin: 5px; cursor: pointer; border-radius: 5px; font-weight: bold; width: 100%; }
+        button:hover { background: #2563eb; }
+        .btn-red { background: #ef4444; }
+        .btn-green { background: #10b981; }
+        .stats { display: flex; justify-content: space-between; background: #f8fafc; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .logs { height: 150px; overflow-y: scroll; background: #1e293b; color: #4ade80; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>Panneau de Contrôle du Formateur</h1>
+        
+        <div class="stats">
+            <div>🔴 Joueurs RED : <span id="count-red">0</span></div>
+            <div>🔵 Joueurs BLUE : <span id="count-blue">0</span></div>
+        </div>
+
+        <h3 id="current-q-info">En attente de démarrage...</h3>
+        
+        <button onclick="startGame()">1. Démarrer / Question Suivante</button>
+        <button class="btn-red" onclick="closeVotes()">2. Stopper les votes et Évaluer</button>
+        <button class="btn-green" onclick="triggerAnimation()">3. Lancer l'Animation</button>
+        
+        <div class="logs" id="logs"></div>
+    </div>
+
+    <script>
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+        const topic = "campus-cyber-kahoot-kydryl-2026";
+        
+        // Base de données des questions (Tu peux en ajouter ici !)
+        const questions = [
+            { team: 'red', text: "Vous avez trouvé l'IP publique de SafeTech. Que faites-vous ?", options: ["Une attaque DDoS direct", "Un scan Nmap pour voir les ports", "Envoyer un malware par la poste", "Attaquer le pare-feu de front"], correct: 1, animType: 'nmap' },
+            { team: 'blue', text: "Alerte ! L'IDS détecte un scan massif depuis une IP inconnue.", options: ["Éteindre tous les serveurs", "Bloquer l'IP sur le Firewall", "Ignorer, c'est sûrement Google", "Contre-attaquer"], correct: 1, animType: 'firewall' },
+            { team: 'red', text: "Le port 80 (Web) est ouvert. Vous cherchez des pages cachées.", options: ["Bruteforce du mot de passe", "Outil Gobuster/Dirb", "Attaque Phishing", "Rien, on abandonne"], correct: 1, animType: 'dirb' },
+            { team: 'blue', text: "Le serveur Web génère des centaines d'erreurs 404 par seconde.", options: ["Bloquer l'IP source (Fail2Ban)", "Mettre un antivirus", "C'est normal, pas de panique", "Changer le site Web"], correct: 0, animType: 'firewall' },
+            // Ajoute les autres ici en suivant la même structure...
+        ];
+
+        let currentQIndex = -1;
+        let players = { red: new Set(), blue: new Set() };
+        let currentVotes = {}; // { 'user_id': choice_id }
+
+        client.subscribe(topic);
+
+        client.on('message', (t, msg) => {
+            const data = JSON.parse(msg.toString());
+            
+            // Gestion des connexions
+            if (data.type === 'JOIN') {
+                players[data.team].add(data.id);
+                document.getElementById('count-' + data.team).innerText = players[data.team].size;
+                log(`[JOIN] Utilisateur a rejoint ${data.team}`);
+                updateScreenCounts();
+            }
+
+            // Gestion des votes
+            if (data.type === 'VOTE') {
+                currentVotes[data.id] = data.choice;
+                log(`[VOTE] 1 vote enregistré.`);
+                updateScreenCounts();
+            }
+        });
+
+        function updateScreenCounts() {
+            if (currentQIndex >= 0) {
+                const team = questions[currentQIndex].team;
+                client.publish(topic, JSON.stringify({
+                    type: 'VOTER_UPDATE',
+                    votes: Object.keys(currentVotes).length,
+                    totalTeam: players[team].size
+                }));
+            }
+        }
+
+        function startGame() {
+            currentQIndex++;
+            if(currentQIndex >= questions.length) {
+                alert("Fin des questions !"); return;
+            }
+            
+            currentVotes = {}; // Reset votes
+            const q = questions[currentQIndex];
+            document.getElementById('current-q-info').innerText = `Question ${currentQIndex + 1} (${q.team.toUpperCase()} TEAM) en cours...`;
+            
+            client.publish(topic, JSON.stringify({
+                type: 'STATE',
+                phase: 'VOTING',
+                teamTurn: q.team,
+                question: { text: q.text },
+                options: q.options
+            }));
+            
+            log("Phase de vote lancée pour Q" + (currentQIndex + 1));
+            updateScreenCounts();
+        }
+
+        function closeVotes() {
+            const q = questions[currentQIndex];
+            
+            // Calcul de la majorité
+            let counts = [0, 0, 0, 0];
+            Object.values(currentVotes).forEach(v => counts[v]++);
+            
+            let maxVotes = Math.max(...counts);
+            let winningChoice = counts.indexOf(maxVotes);
+            let isSuccess = (winningChoice === q.correct);
+
+            // Gérer le cas où personne n'a voté
+            if(Object.keys(currentVotes).length === 0) isSuccess = false;
+
+            client.publish(topic, JSON.stringify({
+                type: 'STATE',
+                phase: 'RESULT',
+                teamTurn: q.team,
+                correctIndex: q.correct,
+                isSuccess: isSuccess
+            }));
+            
+            log(`Votes terminés. Succès : ${isSuccess}`);
+        }
+
+        function triggerAnimation() {
+            const q = questions[currentQIndex];
+            client.publish(topic, JSON.stringify({
+                type: 'STATE',
+                phase: 'ANIMATION',
+                animType: q.animType
+            }));
+            log(`Animation ${q.animType} lancée sur l'écran !`);
+        }
+
+        function log(text) {
+            const logs = document.getElementById('logs');
+            logs.innerHTML += `> ${text}<br>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+    </script>
+</body>
+</html>
