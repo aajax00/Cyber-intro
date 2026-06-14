@@ -15,6 +15,7 @@
         .btn-red { background: #ef4444; } .btn-red:active { background: #dc2626; }
         .btn-green { background: #10b981; } .btn-green:active { background: #059669; }
         .btn-dark { background: #334155; font-size: 14px; padding: 15px;} .btn-dark:active { background: #1e293b; }
+        .btn-gold { background: #eab308; color:#0f172a;}
         .stats { display: flex; justify-content: space-around; background: #f8fafc; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 18px; font-weight: bold; border: 1px solid #cbd5e1;}
         .logs { height: 100px; overflow-y: scroll; background: #1e293b; color: #4ade80; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; border-radius: 5px;}
         #explanation-box { background: #fffbeb; border-left: 5px solid #f59e0b; padding: 15px; margin-top: 15px; display: none; font-size: 16px; color: #92400e; line-height: 1.4;}
@@ -27,8 +28,8 @@
         <h1>Terminal Formateur</h1>
         
         <div class="stats">
-            <div style="color: #ef4444;">🔴 <span id="count-red">0</span></div>
-            <div style="color: #3b82f6;">🔵 <span id="count-blue">0</span></div>
+            <div style="color: #ef4444;">🔴 Joueurs: <span id="count-red">0</span> | Pts: <span id="score-red">0</span></div>
+            <div style="color: #3b82f6;">🔵 Joueurs: <span id="count-blue">0</span> | Pts: <span id="score-blue">0</span></div>
         </div>
 
         <h3 id="current-q-info">Chargement de la session...</h3>
@@ -38,49 +39,49 @@
         <button class="btn-green" onclick="triggerAnimation()">💥 3. Lancer l'Animation</button>
         
         <div id="explanation-box">
-            <div id="explanation-title">Explication :</div>
+            <div id="explanation-title">Explication (À lire à voix haute) :</div>
             <div id="explanation-text"></div>
         </div>
 
         <div class="logs" id="logs"></div>
 
-        <button class="btn-dark" onclick="resetAll()">🔄 Réinitialiser toute la partie (Nouvelle session)</button>
+        <button class="btn-gold" onclick="endGame()">🏆 Terminer la partie (Scoreboard)</button>
+        <button class="btn-dark" onclick="resetAll()">🔄 Réinitialiser toute la partie</button>
     </div>
 
     <script>
-        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { clean: false, clientId: 'admin_' + Math.random().toString(16).substr(2, 8) });
         const topic = "campus-cyber-kahoot-kydryl-2026";
         
         const questions = [
-            { team: 'red', text: "L'IP publique est trouvée. Que faites-vous en premier ?", options: ["Attaque DDoS", "Scan Nmap (ports ouverts)", "Malware par la poste", "Attaquer le pare-feu"], correct: 1, animType: 'nmap', exp: "Un scan de ports (Nmap) est la base de la reconnaissance. Cela permet de voir quelles portes d'entrée (ports) sont ouvertes sur le serveur sans bloquer le système." },
-            { team: 'blue', text: "Alerte ! Le pare-feu détecte un scan massif de ports.", options: ["Éteindre les serveurs", "Bloquer automatiquement l'IP", "Ignorer (c'est Google)", "Lancer un scan retour"], correct: 1, animType: 'soc-block', exp: "La meilleure défense immédiate est le blocage automatique de l'IP source via le Firewall, souvent géré par des outils de détection comme Fail2Ban ou un IPS." },
-            { team: 'red', text: "Le port Web est ouvert. Comment trouver les pages cachées ?", options: ["Bruteforce du mot de passe", "Outil Gobuster (énumération)", "Attaque Phishing", "Abandonner"], correct: 1, animType: 'gobuster', exp: "Gobuster teste des milliers de noms de répertoires à la seconde (/admin, /uploads, /backup) pour trouver des zones non protégées sur le site." },
-            { team: 'blue', text: "Le serveur génère des centaines d'erreurs 404 par minute !", options: ["Bloquer avec Fail2Ban", "Mettre un antivirus", "C'est normal", "Changer le site"], correct: 0, animType: 'soc-404', exp: "Des centaines d'erreurs 404 signifient qu'un outil comme Gobuster cherche des pages. Un outil comme Fail2Ban détecte ce comportement anormal et bannit l'attaquant." },
-            { team: 'red', text: "Page de connexion (/admin) trouvée. Comment y entrer ?", options: ["Injection SQL (SQLi)", "Envoyer un Ransomware", "Appeler l'entreprise", "Scanner le port 22"], correct: 0, animType: 'sqli', exp: "L'injection SQL consiste à taper du code de base de données (ex: ' OR 1=1 --) directement dans le formulaire pour tromper le système et se connecter sans mot de passe." },
-            { team: 'blue', text: "Une tentative d'Injection SQL est détectée dans les logs.", options: ["Supprimer la BDD", "Changer le Wi-Fi", "Déployer un WAF", "Rien faire"], correct: 2, animType: 'soc-sqli', exp: "Le WAF (Web Application Firewall) analyse le trafic web et bloque les requêtes malveillantes comme les injections SQL avant même qu'elles ne touchent la base de données." },
-            { team: 'red', text: "Connecté, mais droits limités. Que chercher pour devenir Root ?", options: ["Téléphone du PDG", "Éteindre le site", "Fichiers de config (mots de passe)", "Modifier le logo"], correct: 2, animType: 'reverse-shell', exp: "L'élévation de privilèges consiste à fouiller le système à la recherche de fichiers mal sécurisés (comme config.php) qui contiennent les identifiants de l'administrateur suprême (Root)." },
-            { team: 'blue', text: "Un compte basique tente d'accéder à des dossiers sensibles.", options: ["Renvoyer l'employé", "Restreindre les droits (Moindre Privilège)", "Attendre", "Formater le serveur"], correct: 1, animType: 'soc-priv', exp: "Le principe du 'moindre privilège' garantit qu'un utilisateur ou un programme n'a accès qu'aux informations strictement nécessaires à son travail. S'il tente d'aller ailleurs, le système le bloque." },
-            { team: 'red', text: "Accès au serveur interne ! Comment voler les plans discrètement ?", options: ["Par Gmail", "Imprimer au bureau", "Clé USB virtuelle", "Exfiltration via DNS"], correct: 3, animType: 'exfil', exp: "Les protocoles classiques (HTTP, FTP) sont surveillés. Les attaquants cachent souvent les données volées dans de fausses requêtes DNS (le système qui traduit les noms de domaine) pour passer sous le radar." },
-            { team: 'blue', text: "Fuite de données en cours vers l'extérieur. Ultime recours !", options: ["Payer", "Couper connexions et Réponse à Incident", "Supprimer les données", "Fermer les yeux"], correct: 1, animType: 'soc-incident', exp: "En cas d'exfiltration avérée, il faut isoler immédiatement le réseau (couper l'accès internet) pour stopper la fuite, et activer l'équipe de réponse à incident (DFIR) pour enquêter." },
-            { team: 'both', text: "BONUS (Toutes équipes) : Ce mail est-il du Phishing ?", options: ["Oui, Phishing", "Non, c'est légitime", "C'est un spam inoffensif", "C'est une newsletter"], correct: 0, animType: 'phishing', exp: "C'est du Typosquattage ! Regardez l'adresse : safeRNech.com (avec un 'r' et un 'n') au lieu de safeMech. L'œil humain lit rapidement un 'm'." }
+            { team: 'red', text: "L'IP publique est trouvée. Que faites-vous en premier ?", options: ["Attaque DDoS", "Scan Nmap (ports ouverts)", "Malware par la poste", "Attaquer le pare-feu"], correct: 1, animType: 'nmap', exp: "Le scan Nmap envoie des paquets TCP/UDP spécifiques vers les ports de la cible. En analysant les réponses (ex: SYN/ACK), on identifie précisément les services ouverts (comme le port 80 pour le web ou 22 pour SSH) sans alerter massivement la cible (si fait discrètement)." },
+            { team: 'blue', text: "Alerte ! Le pare-feu détecte un scan massif de ports.", options: ["Éteindre les serveurs", "Bloquer automatiquement l'IP", "Ignorer", "Lancer un scan retour"], correct: 1, animType: 'soc-block', exp: "Face à un scan bruyant, les IPS (Intrusion Prevention Systems) ou des outils comme Fail2Ban analysent les logs du pare-feu. S'ils détectent un seuil de connexions anormal sur divers ports, ils créent dynamiquement une règle 'DROP' dans Iptables bloquant l'IP source." },
+            { team: 'red', text: "Le port Web (80) est ouvert. Comment trouver les pages cachées ?", options: ["Bruteforce", "Outil Gobuster (énumération)", "Phishing", "Abandonner"], correct: 1, animType: 'gobuster', exp: "Gobuster automatise la recherche de répertoires en utilisant un dictionnaire (wordlist). Il envoie des requêtes HTTP GET très rapides vers /admin, /test, /backup. S'il reçoit un code HTTP 200 ou 301, le dossier existe !" },
+            { team: 'blue', text: "Le serveur génère des centaines d'erreurs 404 par minute !", options: ["Bloquer avec Fail2Ban", "Mettre un antivirus", "C'est normal", "Changer le site"], correct: 0, animType: 'soc-404', exp: "L'énumération par dictionnaire génère inévitablement des codes HTTP 404 (Not Found) pour chaque mot qui n'existe pas. Surveiller les pics de requêtes 404 dans les logs Nginx/Apache est la méthode standard pour détecter un attaquant qui utilise Gobuster ou DirBuster." },
+            { team: 'red', text: "Page de connexion (/admin) trouvée. Comment y entrer ?", options: ["Injection SQL (SQLi)", "Ransomware", "Appeler l'entreprise", "Scanner le port 22"], correct: 0, animType: 'sqli', exp: "L'injection SQL exploite un champ de saisie non sécurisé. En tapant `admin' OR 1=1 --`, l'attaquant modifie la requête dans le backend. La base de données lit 'Si l'utilisateur est admin, OU si 1 est égal à 1 (ce qui est toujours vrai)'. Le mot de passe est ignoré, l'accès est accordé." },
+            { team: 'blue', text: "Une tentative d'Injection SQL est détectée dans les logs.", options: ["Supprimer la BDD", "Changer le Wi-Fi", "Déployer un WAF", "Rien faire"], correct: 2, animType: 'soc-sqli', exp: "Un WAF (Web Application Firewall, comme ModSecurity) se place devant le serveur Web. Il inspecte le contenu (Payload) de chaque requête HTTP POST/GET. S'il détecte des patterns SQL typiques (comme les guillemets ou les commandes UNION SELECT), il bloque la requête avant qu'elle n'atteigne le backend PHP/Node." },
+            { team: 'red', text: "Connecté, mais droits limités. Que chercher pour devenir Root ?", options: ["Téléphone du PDG", "Éteindre le site", "Fichiers de config (mots de passe)", "Modifier le logo"], correct: 2, animType: 'reverse-shell', exp: "Une fois un premier accès obtenu via l'application web (souvent l'utilisateur 'www-data' sur Linux), l'objectif est l'Élévation de Privilèges (PrivEsc). Les attaquants fouillent le système de fichiers pour trouver des identifiants hardcodés dans des fichiers mal protégés (ex: config.php) ou cherchent des binaires SUID mal configurés." },
+            { team: 'blue', text: "Un compte basique tente d'accéder à des dossiers sensibles.", options: ["Renvoyer l'employé", "Restreindre les droits (Moindre Privilège)", "Attendre", "Formater"], correct: 1, animType: 'soc-priv', exp: "Le Principe du Moindre Privilège (PoLP) garantit qu'un utilisateur ou un processus ne possède que les droits stricts nécessaires à sa fonction. Si le serveur web est compromis, mais que ses permissions Linux interdisent la lecture du fichier '/etc/shadow', l'attaquant est bloqué. C'est du cloisonnement." },
+            { team: 'red', text: "Serveur interne atteint ! Comment voler les plans discrètement ?", options: ["Par Gmail", "Imprimer au bureau", "Clé USB virtuelle", "Exfiltration via DNS"], correct: 3, animType: 'exfil', exp: "L'exfiltration classique (via FTP ou HTTP) est souvent détectée par les pare-feux sortants. Le protocole DNS (port 53) est en revanche rarement bloqué car vital. L'attaquant découpe le fichier volé, l'encode en Base64, et l'envoie via de fausses requêtes DNS vers un nom de domaine qu'il contrôle." },
+            { team: 'blue', text: "Fuite de données (DNS) en cours. Ultime recours !", options: ["Payer", "Couper connexions et isoler", "Supprimer les données", "Fermer les yeux"], correct: 1, animType: 'soc-incident', exp: "Une fois la compromission avérée (Detection & Analysis), le framework NIST de Réponse à Incident exige la phase de 'Containment' (Confinement). Isoler la machine du réseau (désactiver la carte réseau ou via l'EDR) coupe le flux de l'attaquant et fige le système pour l'investigation (Forensics)." },
+            { team: 'both', text: "BONUS (Toutes équipes) : Ce mail est-il du Phishing ?", options: ["Oui, Phishing", "Non", "Spam", "Newsletter"], correct: 0, animType: 'phishing', exp: "Il s'agit d'une attaque de Typosquattage. L'attaquant enregistre un nom de domaine visuellement très proche de l'original (ex: safeRNech au lieu de safeMech). L'œil humain lisant globalement les mots, il tombe facilement dans le piège. Toujours vérifier l'URL de l'expéditeur caractère par caractère." }
         ];
 
-        // --- RESTAURATION DES DONNÉES SI LE FORMATEUR RAFRAICHIT ---
+        // --- GESTION ÉTAT ---
         let currentQIndex = parseInt(localStorage.getItem('gm_qIndex'));
         if (isNaN(currentQIndex)) currentQIndex = -1;
-        
         let currentVotes = JSON.parse(localStorage.getItem('gm_votes')) || {};
+        
+        let teamScores = JSON.parse(localStorage.getItem('gm_scores')) || { red: 0, blue: 0 };
         
         let players = { red: new Set(), blue: new Set() };
         let savedPlayers = JSON.parse(localStorage.getItem('gm_players'));
-        if(savedPlayers) {
-            players.red = new Set(savedPlayers.red);
-            players.blue = new Set(savedPlayers.blue);
-        }
+        if(savedPlayers) { players.red = new Set(savedPlayers.red); players.blue = new Set(savedPlayers.blue); }
 
         function saveGMState() {
             localStorage.setItem('gm_qIndex', currentQIndex);
             localStorage.setItem('gm_votes', JSON.stringify(currentVotes));
+            localStorage.setItem('gm_scores', JSON.stringify(teamScores));
             localStorage.setItem('gm_players', JSON.stringify({ red: Array.from(players.red), blue: Array.from(players.blue) }));
             updateUI();
         }
@@ -88,66 +89,47 @@
         function updateUI() {
             document.getElementById('count-red').innerText = players.red.size;
             document.getElementById('count-blue').innerText = players.blue.size;
+            document.getElementById('score-red').innerText = teamScores.red;
+            document.getElementById('score-blue').innerText = teamScores.blue;
             if(currentQIndex >= 0 && currentQIndex < questions.length) {
                 let t = questions[currentQIndex].team === 'both' ? "BONUS" : questions[currentQIndex].team.toUpperCase();
                 document.getElementById('current-q-info').innerText = `Tour ${currentQIndex + 1}/11 : ${t} TEAM`;
             } else {
-                document.getElementById('current-q-info').innerText = currentQIndex >= questions.length ? "Partie Terminée" : "Prêt à démarrer l'atelier...";
+                document.getElementById('current-q-info').innerText = "Prêt à démarrer l'atelier...";
             }
         }
-        updateUI(); // Appel initial
+        updateUI();
 
         // --- MQTT ---
         client.subscribe(topic);
-
         client.on('message', (t, msg) => {
             const data = JSON.parse(msg.toString());
-            if (data.type === 'JOIN') {
-                players[data.team].add(data.id);
-                saveGMState();
-                updateScreenCounts();
-            }
-            if (data.type === 'VOTE') {
-                currentVotes[data.id] = data.choice;
-                saveGMState();
-                updateScreenCounts();
-            }
+            if (data.type === 'JOIN') { players[data.team].add(data.id); saveGMState(); updateScreenCounts(); }
+            if (data.type === 'VOTE') { currentVotes[data.id] = data.choice; saveGMState(); updateScreenCounts(); }
         });
 
         function updateScreenCounts() {
             if (currentQIndex >= 0 && currentQIndex < questions.length) {
                 const team = questions[currentQIndex].team;
                 const total = team === 'both' ? (players['red'].size + players['blue'].size) : players[team].size;
-                client.publish(topic, JSON.stringify({
-                    type: 'VOTER_UPDATE',
-                    votes: Object.keys(currentVotes).length,
-                    totalTeam: total
-                }), { retain: true }); // Retain pour que l'écran refresh garde le compteur
+                client.publish(topic, JSON.stringify({ type: 'VOTER_UPDATE', votes: Object.keys(currentVotes).length, totalTeam: total }), { retain: true });
             }
         }
 
         function startGame() {
             currentQIndex++;
-            if(currentQIndex >= questions.length) { alert("Fin de la simulation !"); return; }
+            if(currentQIndex >= questions.length) { alert("Toutes les questions sont passées ! Affichez le scoreboard."); return; }
             
             document.getElementById('explanation-box').style.display = 'none'; 
             currentVotes = {}; 
             saveGMState();
-            
             const q = questions[currentQIndex];
             
-            // LA MAGIE EST ICI : { retain: true } force le serveur MQTT à garder cette question en mémoire
             client.publish(topic, JSON.stringify({
-                type: 'STATE',
-                phase: 'VOTING',
-                qIndex: currentQIndex, // Index envoyé au client pour éviter le double vote
-                teamTurn: q.team,
-                question: { text: q.text },
-                options: q.options
+                type: 'STATE', phase: 'VOTING', qIndex: currentQIndex, teamTurn: q.team, question: { text: q.text }, options: q.options
             }), { retain: true });
             
-            log(`[Q${currentQIndex+1}] Lancée. En attente...`);
-            updateScreenCounts();
+            log(`[Q${currentQIndex+1}] Lancée. En attente...`); updateScreenCounts();
         }
 
         function closeVotes() {
@@ -158,40 +140,36 @@
             Object.values(currentVotes).forEach(v => { if (v === q.correct) correctCount++; });
             let isSuccess = (correctCount >= totalVoted / 2) && totalVoted > 0;
 
+            // Ajout des points uniquement si la décision est validée majoritairement ET si ce n'est pas la question bonus (ou alors on donne le point à celui qui a eu le plus de bonnes reponses dans la question bonus, mais restons simple)
+            if(isSuccess && q.team !== 'both') {
+                teamScores[q.team]++;
+                saveGMState();
+            }
+
             client.publish(topic, JSON.stringify({
-                type: 'STATE',
-                phase: 'RESULT',
-                qIndex: currentQIndex,
-                teamTurn: q.team,
-                correctIndex: q.correct,
-                isSuccess: isSuccess,
-                correctCount: correctCount,
-                totalVoted: totalVoted
-            }), { retain: true }); // Retain
+                type: 'STATE', phase: 'RESULT', qIndex: currentQIndex, teamTurn: q.team, correctIndex: q.correct, isSuccess: isSuccess, correctCount: correctCount, totalVoted: totalVoted
+            }), { retain: true });
             
             log(`Votes terminés. ${correctCount}/${totalVoted} OK.`);
-            
             document.getElementById('explanation-text').innerText = q.exp;
             document.getElementById('explanation-box').style.display = 'block';
         }
 
         function triggerAnimation() {
-            const q = questions[currentQIndex];
-            client.publish(topic, JSON.stringify({
-                type: 'STATE',
-                phase: 'ANIMATION',
-                qIndex: currentQIndex,
-                animType: q.animType
-            }), { retain: true }); // Retain
+            client.publish(topic, JSON.stringify({ type: 'STATE', phase: 'ANIMATION', qIndex: currentQIndex, animType: questions[currentQIndex].animType }), { retain: true });
             log(`Animation déclenchée.`);
         }
 
+        function endGame() {
+            client.publish(topic, JSON.stringify({ type: 'STATE', phase: 'END_GAME', scores: teamScores }), { retain: true });
+            log(`Affichage de l'écran de fin.`);
+        }
+
         function resetAll() {
-            if(confirm("Êtes-vous sûr de vouloir réinitialiser toute la partie (compteurs, votes, etc) ?")) {
-                localStorage.clear(); // Efface la mémoire de ton tel
-                // Envoie un ordre secret au client pour vider aussi leur historique de vote
+            if(confirm("Êtes-vous sûr de vouloir tout réinitialiser (Scores, Joueurs, Avancement) ?")) {
+                localStorage.clear();
                 client.publish(topic, JSON.stringify({ type: 'STATE', phase: 'RESET' }), { retain: true });
-                location.reload(); // Recharge la page
+                location.reload();
             }
         }
 
