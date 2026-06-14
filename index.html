@@ -1,1 +1,72 @@
-a
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Opérationnelle</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body { background-color: #020617; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        button { width: 100%; padding: 20px; margin: 10px 0; font-size: 18px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .red-team { background-color: #ef4444; color: white; }
+        .blue-team { background-color: #3b82f6; color: white; }
+        .hidden { display: none; }
+        .status { color: #4ade80; font-size: 14px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Terminal de Commande</h2>
+    <div id="status" class="status">Connexion au réseau en cours...</div>
+
+    <div id="team-selection">
+        <h3>Choisissez votre camp :</h3>
+        <button class="red-team" onclick="joinTeam('attaque')">Rejoindre l'ATTAQUE ☠️</button>
+        <button class="blue-team" onclick="joinTeam('defense')">Rejoindre la DÉFENSE 🛡️</button>
+    </div>
+
+    <div id="actions-attaque" class="hidden">
+        <h3 style="color: #ef4444;">Menu Offensif</h3>
+        <button class="red-team" onclick="sendAction('Lancement Phishing', 'attaque')">📧 Lancer Campagne Phishing</button>
+        <button class="red-team" onclick="sendAction('Scan de Ports', 'attaque')">🔍 Scanner les Ports</button>
+        <button class="red-team" onclick="sendAction('Attaque DDoS', 'attaque')">💥 Lancer DDoS</button>
+    </div>
+
+    <div id="actions-defense" class="hidden">
+        <h3 style="color: #3b82f6;">Menu Défensif</h3>
+        <button class="blue-team" onclick="sendAction('Analyse Logs', 'defense')">📊 Analyser les Logs</button>
+        <button class="blue-team" onclick="sendAction('Mise à jour Firewall', 'defense')">🧱 Renforcer Firewall</button>
+        <button class="blue-team" onclick="sendAction('Isolation Réseau', 'defense')">🔌 Isoler le Réseau</button>
+    </div>
+
+    <script>
+        // Connexion au broker public gratuit (sécurisé via wss:// pour GitHub Pages)
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+        const topic = "campus-cyber-kyndryl-2026-demo"; // Canal de communication unique
+
+        client.on('connect', function () {
+            document.getElementById('status').innerText = "🟢 Connecté au réseau de l'entreprise";
+        });
+
+        function joinTeam(team) {
+            document.getElementById('team-selection').classList.add('hidden');
+            if(team === 'attaque') {
+                document.getElementById('actions-attaque').classList.remove('hidden');
+            } else {
+                document.getElementById('actions-defense').classList.remove('hidden');
+            }
+        }
+
+        function sendAction(actionName, teamName) {
+            const payload = JSON.stringify({ action: actionName, team: teamName });
+            client.publish(topic, payload);
+            
+            // Petit feedback visuel sur le téléphone
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "✅ Action envoyée !";
+            setTimeout(() => { btn.innerText = originalText; }, 2000);
+        }
+    </script>
+</body>
+</html>
