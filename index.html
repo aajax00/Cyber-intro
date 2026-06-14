@@ -12,9 +12,10 @@
         .blue-team { background-color: #3b82f6; color: white; }
         .btn-option { background-color: #1e293b; color: #22d3ee; border: 2px solid #334155; }
         .btn-option.selected { background-color: #22d3ee; color: #020617; }
+        .btn-validate { background-color: #10b981; color: white; margin-top: 20px; border: 2px solid #059669; }
         .hidden { display: none; }
         .status { color: #4ade80; margin-bottom: 20px; font-weight: bold; }
-        #waiting-msg { color: #94a3b8; font-style: italic; margin-top: 50px; }
+        #waiting-msg { color: #94a3b8; font-style: italic; margin-top: 50px; font-size: 18px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -32,61 +33,87 @@
         <div id="waiting-msg">En attente des ordres du commandant...</div>
         
         <div id="voting-area" class="hidden">
-            <h3 style="color:#f8fafc">À vous de jouer !</h3>
-            <button class="btn btn-option" onclick="vote(0)" id="opt0"></button>
-            <button class="btn btn-option" onclick="vote(1)" id="opt1"></button>
-            <button class="btn btn-option" onclick="vote(2)" id="opt2"></button>
-            <button class="btn btn-option" onclick="vote(3)" id="opt3"></button>
+            <h3 style="color:#f8fafc" id="action-title">Sélectionnez une action :</h3>
+            <button class="btn btn-option" onclick="selectOption(0)" id="opt0"></button>
+            <button class="btn btn-option" onclick="selectOption(1)" id="opt1"></button>
+            <button class="btn btn-option" onclick="selectOption(2)" id="opt2"></button>
+            <button class="btn btn-option" onclick="selectOption(3)" id="opt3"></button>
+            
+            <button class="btn btn-validate hidden" id="btn-validate" onclick="submitVote()">✅ Valider ma réponse</button>
         </div>
     </div>
 
     <script>
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
         const topic = "campus-cyber-kahoot-kydryl-2026";
-        const clientId = "user_" + Math.random().toString(36).substring(7); // ID unique par tel
-        let myTeam = "";
+        
+        let myTeam = localStorage.getItem('cyberTeam') || "";
+        let clientId = localStorage.getItem('cyberClientId') || ("user_" + Math.random().toString(36).substring(7));
+        localStorage.setItem('cyberClientId', clientId);
+        let selectedChoice = -1;
 
-        client.on('connect', () => document.getElementById('status').innerText = "🟢 Connecté");
+        client.on('connect', () => {
+            document.getElementById('status').innerText = "🟢 Connecté";
+            if(myTeam !== "") {
+                document.getElementById('lobby').classList.add('hidden');
+                document.getElementById('game').classList.remove('hidden');
+                document.getElementById('team-display').innerHTML = myTeam === 'red' ? "<span style='color:#ef4444'>Division RED TEAM</span>" : "<span style='color:#3b82f6'>Division BLUE TEAM</span>";
+                client.publish(topic, JSON.stringify({ type: 'JOIN', team: myTeam, id: clientId }));
+            }
+        });
 
         function joinTeam(team) {
             myTeam = team;
+            localStorage.setItem('cyberTeam', team);
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('game').classList.remove('hidden');
             document.getElementById('team-display').innerHTML = team === 'red' ? "<span style='color:#ef4444'>Division RED TEAM</span>" : "<span style='color:#3b82f6'>Division BLUE TEAM</span>";
-            
             client.publish(topic, JSON.stringify({ type: 'JOIN', team: team, id: clientId }));
         }
 
-        // Écoute des ordres du système
         client.on('message', (t, msg) => {
             const data = JSON.parse(msg.toString());
+            
             if(data.type === 'STATE') {
-                if(data.phase === 'VOTING' && data.teamTurn === myTeam) {
-                    document.getElementById('waiting-msg').classList.add('hidden');
-                    document.getElementById('voting-area').classList.remove('hidden');
-                    // Reset couleurs
-                    for(let i=0; i<4; i++) {
-                        const btn = document.getElementById('opt' + i);
-                        btn.innerText = data.options[i];
-                        btn.classList.remove('selected');
+                if(data.phase === 'VOTING') {
+                    // Si c'est le tour de l'équipe OU si c'est la question bonus ('both')
+                    if(data.teamTurn === myTeam || data.teamTurn === 'both') {
+                        document.getElementById('waiting-msg').classList.add('hidden');
+                        document.getElementById('voting-area').classList.remove('hidden');
+                        document.getElementById('btn-validate').classList.add('hidden');
+                        selectedChoice = -1;
+                        
+                        document.getElementById('action-title').innerText = data.teamTurn === 'both' ? "🚨 QUESTION BONUS (Toutes équipes) 🚨" : "Sélectionnez une action :";
+
+                        for(let i=0; i<4; i++) {
+                            const btn = document.getElementById('opt' + i);
+                            btn.innerText = data.options[i];
+                            btn.classList.remove('selected');
+                        }
+                    } else {
+                        document.getElementById('voting-area').classList.add('hidden');
+                        document.getElementById('waiting-msg').classList.remove('hidden');
+                        document.getElementById('waiting-msg').innerText = "L'autre équipe joue. Observez l'écran principal !";
                     }
-                } else {
-                    document.getElementById('waiting-msg').classList.remove('hidden');
-                    document.getElementById('voting-area').classList.add('hidden');
-                    document.getElementById('waiting-msg').innerText = data.teamTurn === myTeam ? "Préparez-vous..." : "L'autre équipe est en train de jouer, observez l'écran !";
                 }
             }
         });
 
-        function vote(choiceId) {
-            // Visuel
+        function selectOption(choiceId) {
+            selectedChoice = choiceId;
             for(let i=0; i<4; i++) document.getElementById('opt'+i).classList.remove('selected');
             document.getElementById('opt'+choiceId).classList.add('selected');
-            // Envoi au système
-            client.publish(topic, JSON.stringify({ type: 'VOTE', team: myTeam, id: clientId, choice: choiceId }));
+            document.getElementById('btn-validate').classList.remove('hidden');
         }
 
-        client.subscribe(topic);
+        function submitVote() {
+            if(selectedChoice !== -1) {
+                client.publish(topic, JSON.stringify({ type: 'VOTE', team: myTeam, id: clientId, choice: selectedChoice }));
+                document.getElementById('voting-area').classList.add('hidden');
+                document.getElementById('waiting-msg').classList.remove('hidden');
+                document.getElementById('waiting-msg').innerHTML = "✅ <strong>Action envoyée !</strong><br><br>Regardez l'écran principal en attendant les autres joueurs.";
+            }
+        }
     </script>
 </body>
 </html>

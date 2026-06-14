@@ -5,28 +5,53 @@
     <title>Cyber Écran Principal</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        body { background-color: #020617; color: white; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 40px; overflow: hidden; }
+        body { background-color: #020617; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; overflow: hidden; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 20px; }
         h1 { margin: 0; color: #22d3ee; text-transform: uppercase; }
         .counter { font-size: 24px; color: #4ade80; background: #0f172a; padding: 10px 20px; border-radius: 8px; border: 1px solid #4ade80; }
         
-        #question-container { margin-top: 50px; text-align: center; }
-        .turn-red { color: #ef4444; font-size: 2em; margin-bottom: 10px; }
-        .turn-blue { color: #3b82f6; font-size: 2em; margin-bottom: 10px; }
+        #question-container { margin-top: 50px; text-align: center; position: relative; z-index: 10; }
+        .turn-red { color: #ef4444; font-size: 2em; margin-bottom: 10px; font-weight: bold; }
+        .turn-blue { color: #3b82f6; font-size: 2em; margin-bottom: 10px; font-weight: bold; }
+        .turn-both { color: #eab308; font-size: 2em; margin-bottom: 10px; font-weight: bold; }
         #question-text { font-size: 36px; margin: 20px 0; }
         
-        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: 40px auto; }
-        .opt-box { background: #1e293b; padding: 20px; font-size: 24px; border-radius: 10px; border: 2px solid #334155; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; margin: 40px auto; }
+        .opt-box { background: #1e293b; padding: 20px; font-size: 24px; border-radius: 10px; border: 2px solid #334155; transition: all 0.2s; }
         
-        #result-msg { font-size: 40px; margin-top: 20px; font-weight: bold; }
+        #result-msg { font-size: 40px; margin-top: 20px; font-weight: bold; min-height: 80px; }
         .success { color: #4ade80; } .fail { color: #ef4444; }
+        .stats-msg { font-size: 28px; color: #cbd5e1; display: block; margin-top: 10px; font-weight: normal; }
 
-        /* Console Terminal pour les animations */
-        #terminal { background: #000; border: 1px solid #333; height: 300px; padding: 20px; margin-top: 40px; border-radius: 5px; text-align: left; overflow: hidden; display: none; }
-        .term-text { color: #0f0; line-height: 1.5; font-size: 18px; }
-        .term-red { color: #f00; }
+        /* --- SYSTÈME D'ANIMATIONS PLEIN ÉCRAN --- */
+        #anim-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #020617; z-index: 9999; padding: 20px; box-sizing: border-box; }
+        .anim-window { width: 100%; height: 100%; border-radius: 8px; overflow: hidden; display: none; flex-direction: column; }
+        .window-header { background: #334155; padding: 10px; display: flex; align-items: center; font-weight: bold; font-family: monospace;}
+        .dots { display: flex; gap: 5px; margin-right: 15px; }
+        .dots div { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-r { background: #ef4444; } .dot-y { background: #eab308; } .dot-g { background: #22c55e; }
         
-        .hidden { display: none; }
+        /* Terminal */
+        #terminal { background: #000; font-family: 'Courier New', Courier, monospace; color: #0f0; padding: 20px; flex: 1; font-size: 22px; text-align: left;}
+        
+        /* Browser */
+        #browser { background: #fff; color: #000; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .url-bar { background: #f1f5f9; padding: 10px; width: 100%; border-bottom: 2px solid #cbd5e1; text-align: center; color: #475569; font-family: monospace; font-size: 18px;}
+        .browser-content { font-size: 24px; text-align: center; padding: 40px; }
+        .fake-input { border: 2px solid #cbd5e1; padding: 10px; border-radius: 4px; font-size: 20px; width: 300px; margin: 10px; display: block;}
+        
+        /* SOC Dashboard */
+        #soc { background: #0f172a; flex: 1; padding: 20px; display: flex; flex-direction: column; }
+        .soc-header { color: #3b82f6; font-size: 28px; border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase; }
+        .soc-alert { background: #7f1d1d; color: #fca5a5; padding: 20px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-bottom: 20px; display: none; border: 2px solid #ef4444; animation: blink 1s infinite;}
+        .soc-logs { background: #020617; color: #94a3b8; font-family: monospace; font-size: 18px; padding: 10px; height: 100%; overflow-y: hidden; text-align: left;}
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Mail Phishing */
+        #mail { background: #f8fafc; color: #334155; flex: 1; padding: 40px; text-align: left; }
+        .mail-header { border-bottom: 1px solid #cbd5e1; padding-bottom: 20px; margin-bottom: 20px; font-size: 22px; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -36,7 +61,7 @@
         <div class="counter" id="voters-count">En attente de joueurs...</div>
     </div>
 
-    <div id="question-container" class="hidden">
+    <div id="question-container">
         <div id="turn-indicator"></div>
         <div id="question-text"></div>
         
@@ -46,11 +71,47 @@
             <div class="opt-box" id="disp-opt2"></div>
             <div class="opt-box" id="disp-opt3"></div>
         </div>
-
         <div id="result-msg"></div>
     </div>
 
-    <div id="terminal"></div>
+    <div id="anim-layer">
+        
+        <div class="anim-window" id="win-terminal">
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> root@kali:~</div>
+            <div id="terminal"></div>
+        </div>
+
+        <div class="anim-window" id="win-browser">
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Navigateur Web</div>
+            <div class="url-bar" id="browser-url">https://safetech.com</div>
+            <div id="browser" class="browser-content"></div>
+        </div>
+
+        <div class="anim-window" id="win-soc">
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> SafeTech SIEM / SOC</div>
+            <div id="soc">
+                <div class="soc-header">📊 Security Operations Center</div>
+                <div class="soc-alert" id="soc-alert"></div>
+                <div class="soc-logs" id="soc-logs"></div>
+            </div>
+        </div>
+
+        <div class="anim-window" id="win-mail">
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Boîte de réception</div>
+            <div id="mail">
+                <div class="mail-header">
+                    <strong>De :</strong> admin@safe<span style="color:red; font-weight:bold; background:yellow;">rn</span>ech.com<br>
+                    <strong>Objet :</strong> URGENT - Réinitialisation de votre mot de passe<br>
+                    <strong>Date :</strong> Aujourd'hui, 09:12
+                </div>
+                <div style="font-size: 20px; line-height: 1.6;">
+                    Bonjour,<br><br>Une activité suspecte a été détectée sur votre compte. Veuillez cliquer sur le bouton ci-dessous pour confirmer votre identité et sécuriser votre accès.<br><br>
+                    <button style="background:#2563eb; color:white; padding:15px; border:none; font-size:18px; border-radius:5px; margin-top:20px;">Sécuriser mon compte</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <script>
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
@@ -66,93 +127,174 @@
             
             if (data.type === 'STATE') {
                 const qc = document.getElementById('question-container');
-                const term = document.getElementById('terminal');
+                const animLayer = document.getElementById('anim-layer');
                 
                 if (data.phase === 'VOTING') {
                     qc.classList.remove('hidden');
-                    term.style.display = 'none';
-                    document.getElementById('result-msg').innerText = "";
+                    animLayer.style.display = 'none'; // Cache les animations
                     
-                    document.getElementById('turn-indicator').className = data.teamTurn === 'red' ? 'turn-red' : 'turn-blue';
-                    document.getElementById('turn-indicator').innerText = data.teamTurn === 'red' ? "🔥 AU TOUR DE LA RED TEAM 🔥" : "🛡️ AU TOUR DE LA BLUE TEAM 🛡️";
+                    document.getElementById('result-msg').innerHTML = ""; 
+                    document.getElementById('result-msg').className = "";
+                    
+                    if(data.teamTurn === 'red') {
+                        document.getElementById('turn-indicator').className = 'turn-red';
+                        document.getElementById('turn-indicator').innerText = "🔥 MISSION : RED TEAM 🔥";
+                    } else if (data.teamTurn === 'blue') {
+                        document.getElementById('turn-indicator').className = 'turn-blue';
+                        document.getElementById('turn-indicator').innerText = "🛡️ MISSION : BLUE TEAM 🛡️";
+                    } else {
+                        document.getElementById('turn-indicator').className = 'turn-both';
+                        document.getElementById('turn-indicator').innerText = "🚨 QUESTION BONUS (Toutes les équipes) 🚨";
+                    }
                     
                     document.getElementById('question-text').innerText = data.question.text;
+                    
+                    // CORRECTION BUG : Force le reset visuel total
                     for(let i=0; i<4; i++) {
-                        document.getElementById('disp-opt'+i).innerText = String.fromCharCode(65+i) + ". " + data.options[i];
-                        document.getElementById('disp-opt'+i).style.borderColor = '#334155'; // Reset color
+                        let optBox = document.getElementById('disp-opt'+i);
+                        optBox.innerText = String.fromCharCode(65+i) + ". " + data.options[i];
+                        optBox.style.cssText = "background-color: #1e293b; border-color: #334155;"; // Efface les anciennes couleurs
                     }
                 }
                 
                 if (data.phase === 'RESULT') {
-                    // Highlight bonne reponse
-                    document.getElementById('disp-opt'+data.correctIndex).style.borderColor = '#4ade80';
-                    document.getElementById('disp-opt'+data.correctIndex).style.backgroundColor = '#064e3b';
+                    // Colore la bonne réponse
+                    let correctBox = document.getElementById('disp-opt'+data.correctIndex);
+                    correctBox.style.cssText = "background-color: #064e3b !important; border-color: #4ade80 !important;";
 
                     const rMsg = document.getElementById('result-msg');
+                    const statsHtml = `<span class="stats-msg">📊 ${data.correctCount} joueurs sur ${data.totalVoted} ont trouvé la bonne réponse !</span>`;
+
                     if(data.isSuccess) {
-                        rMsg.innerText = "✅ Majorité correcte ! Déploiement de l'action...";
+                        rMsg.innerHTML = "✅ Décision validée par la majorité !" + statsHtml;
                         rMsg.className = "success";
                     } else {
-                        rMsg.innerText = "❌ Échec. Mauvaise décision. Mais voici ce qu'il fallait faire...";
+                        rMsg.innerHTML = "❌ Échec. Mauvaise décision globale." + statsHtml;
                         rMsg.className = "fail";
                     }
                 }
 
                 if (data.phase === 'ANIMATION') {
-                    term.style.display = 'block';
+                    animLayer.style.display = 'block'; 
+                    document.querySelectorAll('.anim-window').forEach(el => el.style.display = 'none');
                     runAnimation(data.animType);
                 }
             }
         });
 
-        function runAnimation(type) {
+        // --- MOTEUR D'ANIMATIONS ---
+        async function runAnimation(type) {
+            const delay = ms => new Promise(res => setTimeout(res, ms));
+
+            const termWin = document.getElementById('win-terminal');
             const term = document.getElementById('terminal');
-            term.innerHTML = "";
-            let lines = [];
+            const socWin = document.getElementById('win-soc');
+            const socLogs = document.getElementById('soc-logs');
+            const socAlert = document.getElementById('soc-alert');
+            const webWin = document.getElementById('win-browser');
+            const web = document.getElementById('browser');
+            const urlBar = document.getElementById('browser-url');
+            const mailWin = document.getElementById('win-mail');
+
+            // Reset UI
+            term.innerHTML = ""; socLogs.innerHTML = ""; socAlert.style.display = "none"; web.innerHTML = "";
 
             if(type === 'nmap') {
-                lines = [
-                    "<span class='term-text'>root@kali:~# nmap -sV -A 192.168.1.45</span>",
-                    "<span class='term-text'>Starting Nmap 7.92...</span>",
-                    "<span class='term-text'>Scanning 192.168.1.45 [1000 ports]</span>",
-                    "<span class='term-text'>Discovered open port 80/tcp on 192.168.1.45</span>",
-                    "<span class='term-text term-red'>Discovered open port 22/tcp on 192.168.1.45</span>",
-                    "<span class='term-text'>Nmap done: 1 IP address (1 host up) scanned in 3.42 seconds</span>"
+                termWin.style.display = "flex";
+                const lines = [
+                    "root@kali:~# nmap -sV -p- 185.22.44.1",
+                    "Starting Nmap 7.92...",
+                    "Scanning 185.22.44.1 [65535 ports]",
+                    "<span style='color:red'>[+] Discovered open port 80/tcp (http)</span>",
+                    "<span style='color:red'>[+] Discovered open port 22/tcp (ssh)</span>",
+                    "Nmap done: 1 IP scanned in 12.4 seconds."
                 ];
-            } else if(type === 'firewall') {
-                lines = [
-                    "<span class='term-text'>admin@soc:~# iptables -A INPUT -s 185.12.3.4 -j DROP</span>",
-                    "<span class='term-text'>Applying new rule...</span>",
-                    "<span class='term-text'>Analyzing traffic drop rate...</span>",
-                    "<span class='term-text'>[SUCCESS] All incoming traffic from attacker blocked.</span>"
-                ];
-            } else if (type === 'dirb') {
-                lines = [
-                    "<span class='term-text'>root@kali:~# gobuster dir -u http://192.168.1.45 -w common.txt</span>",
-                    "<span class='term-text'>Starting gobuster...</span>",
-                    "<span class='term-text'>/images (Status: 301)</span>",
-                    "<span class='term-text term-red'>/admin_dashboard (Status: 200) [Size: 4501]</span>",
-                    "<span class='term-text term-red'>/db_backup.sql (Status: 200) [Size: 104593]</span>"
-                ];
-            } else if (type === 'mfa') {
-                lines = [
-                    "<span class='term-text'>[ALERTE] Suspicious login on /admin_dashboard</span>",
-                    "<span class='term-text'>admin@soc:~# force_mfa_policy --all-users</span>",
-                    "<span class='term-text'>Updating Active Directory policies...</span>",
-                    "<span class='term-text'>[SUCCESS] Multi-Factor Authentication ENFORCED globally. Attacker locked out.</span>"
-                ];
-            }
+                for(let l of lines) { term.innerHTML += l + "<br>"; await delay(600); }
 
-            // Effet machine à écrire
-            let i = 0;
-            function typeWriter() {
-                if (i < lines.length) {
-                    term.innerHTML += lines[i] + "<br>";
-                    i++;
-                    setTimeout(typeWriter, 800);
+            } else if(type === 'soc-block') {
+                socWin.style.display = "flex";
+                socLogs.innerHTML += "System OK. Listening for events...<br>"; await delay(1000);
+                socAlert.style.display = "block"; socAlert.innerHTML = "⚠️ ALERTE : SCAN DE PORTS MASSIF DÉTECTÉ (IP: 104.22.1.8)"; await delay(2000);
+                socLogs.innerHTML += "<span style='color:#3b82f6'>[ACTION AUTOMATIQUE] Création règle iptables...</span><br>"; await delay(1000);
+                socLogs.innerHTML += "<span style='color:#4ade80'>[SUCCÈS] IP 104.22.1.8 bloquée. Menace neutralisée.</span><br>";
+                socAlert.innerHTML = "✅ MENACE ÉCARTÉE"; socAlert.style.background = "#064e3b"; socAlert.style.borderColor = "#4ade80";
+
+            } else if (type === 'gobuster') {
+                webWin.style.display = "flex";
+                urlBar.innerText = "https://safetech.com";
+                web.innerHTML = "<h1>Bienvenue sur SafeTech</h1><p>Leader en innovation.</p>";
+                await delay(2000);
+                webWin.style.display = "none"; termWin.style.display = "flex"; // Switch to terminal
+                const lines = [
+                    "root@kali:~# gobuster dir -u https://safetech.com -w common.txt",
+                    "Starting gobuster...",
+                    "/.git/ (Status: 403)",
+                    "<span style='color:red'>/admin (Status: 200) [Size: 1043]</span>",
+                    "<span style='color:red'>/uploads (Status: 200) [Size: 40]</span>"
+                ];
+                for(let l of lines) { term.innerHTML += l + "<br>"; await delay(500); }
+
+            } else if (type === 'soc-404') {
+                socWin.style.display = "flex";
+                for(let i=0; i<15; i++) {
+                    socLogs.innerHTML += `[${new Date().toLocaleTimeString()}] WARNING: HTTP 404 on /secret_dir from 104.22.1.8<br>`;
+                    await delay(100);
                 }
+                socAlert.style.display = "block"; socAlert.innerHTML = "⚠️ FAIL2BAN : ACTIVITÉ ANORMALE DÉTECTÉE (Trop de 404)"; await delay(1500);
+                socLogs.innerHTML += "<br><span style='color:#4ade80'>[FAIL2BAN] Banning IP 104.22.1.8 for 24 hours.</span><br>";
+                
+            } else if (type === 'sqli') {
+                webWin.style.display = "flex";
+                urlBar.innerText = "https://safetech.com/admin";
+                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>Username</span><span class='fake-input'>Password</span>";
+                await delay(1500);
+                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>admin' OR '1'='1</span><span class='fake-input'>***</span>";
+                await delay(1000);
+                web.innerHTML = "<h2 style='color:red'>Accès Refusé (Erreur SQL)</h2>";
+                await delay(1500);
+                web.innerHTML = "<h2>Portail Administrateur</h2><span class='fake-input'>admin' OR 1=1 --</span><span class='fake-input'>***</span>";
+                await delay(1000);
+                web.innerHTML = "<h1 style='color:green'>🔓 DASHBOARD ADMINISTRATEUR CONNECTÉ</h1><p>Bienvenue SuperAdmin.</p>";
+
+            } else if (type === 'soc-sqli') {
+                socWin.style.display = "flex";
+                socLogs.innerHTML += "Trafic Web normal...<br>"; await delay(1000);
+                socLogs.innerHTML += `[WAF] <span style='color:red'>SQL Injection Pattern Detected: "OR 1=1 --"</span><br>`; await delay(500);
+                socAlert.style.display = "block"; socAlert.innerHTML = "🛑 WAF: INJECTION SQL BLOQUÉE (IP: 104.22.1.8)";
+                
+            } else if (type === 'reverse-shell') {
+                termWin.style.display = "flex";
+                term.innerHTML = "root@kali:~# nc -lvnp 4444<br>Listening on [0.0.0.0] (family 0, port 4444)<br>"; await delay(1500);
+                term.innerHTML += "<span style='color:red'>Connection received on 185.22.44.1 49302!</span><br>www-data@safetech:/var/www/html$ "; await delay(1000);
+                term.innerHTML += "ls -la<br>index.php<br>config.php<br><span style='color:yellow'>credentialSecure.txt</span><br>"; await delay(1500);
+                term.innerHTML += "www-data@safetech:/var/www/html$ cat credentialSecure.txt<br>"; await delay(1000);
+                term.innerHTML += "<span style='color:red; font-weight:bold; font-size:28px;'>ROOT_PASSWORD=SuperAdmin2026!!!</span><br>";
+
+            } else if (type === 'soc-priv') {
+                socWin.style.display = "flex";
+                socLogs.innerHTML += "[IAM] User 'stagiaire_bob' logged in.<br>"; await delay(1000);
+                socLogs.innerHTML += "<span style='color:yellow'>[AUDIT] User 'stagiaire_bob' attempting to read /etc/shadow...</span><br>"; await delay(1000);
+                socAlert.style.display = "block"; socAlert.innerHTML = "🛡️ PRINCIPE DU MOINDRE PRIVILÈGE APPLIQUÉ";
+                socLogs.innerHTML += "<span style='color:#4ade80'>[DENIED] Permission refused for 'stagiaire_bob'. Session terminated.</span><br>";
+
+            } else if (type === 'exfil') {
+                termWin.style.display = "flex";
+                term.innerHTML = "root@kali:~# python3 dns_exfiltrator.py --file plans_secrets_drone.pdf<br>"; await delay(1000);
+                term.innerHTML += "Encoding file to Base64...<br>Sending DNS queries...<br>"; await delay(500);
+                for(let i=1; i<=10; i++) { term.innerHTML += `<span style='color:yellow'>[+] Query ${i}/450 : ${Math.random().toString(36).substring(2)}.malicious-domain.com</span><br>`; await delay(150); }
+                term.innerHTML += "<span style='color:red; font-weight:bold;'>[✔] EXFILTRATION TERMINÉE. FICHIER RÉCUPÉRÉ.</span>";
+
+            } else if (type === 'soc-incident') {
+                socWin.style.display = "flex";
+                socLogs.innerHTML += "Monitoring Outbound Traffic...<br>"; await delay(1000);
+                socAlert.style.display = "block"; socAlert.innerHTML = "🚨 FUITE DE DONNÉES EN COURS (ANOMALIE DNS) 🚨";
+                socAlert.style.animation = "blink 0.2s infinite"; await delay(1500);
+                socLogs.innerHTML += "<span style='color:red; font-weight:bold;'>[LOCKDOWN] KILLING ALL EXTERNAL CONNECTIONS.</span><br>"; await delay(1000);
+                socAlert.innerHTML = "🔒 RÉSEAU ISOLÉ. RÉPONSE À INCIDENT ACTIVÉE."; socAlert.style.animation = "none"; socAlert.style.background = "#0f172a";
+
+            } else if (type === 'phishing') {
+                mailWin.style.display = "block";
             }
-            typeWriter();
         }
     </script>
 </body>
