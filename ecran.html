@@ -8,7 +8,7 @@
         body { background-color: #020617; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; overflow: hidden; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 20px; }
         h1 { margin: 0; color: #22d3ee; text-transform: uppercase; }
-        .counter { font-size: 24px; color: #4ade80; background: #0f172a; padding: 10px 20px; border-radius: 8px; border: 1px solid #4ade80; }
+        .counter { font-size: 24px; color: #4ade80; background: #0f172a; padding: 10px 20px; border: 1px solid #4ade80; }
         
         #question-container { margin-top: 50px; text-align: center; position: relative; z-index: 10; }
         .turn-red { color: #ef4444; font-size: 2em; margin-bottom: 10px; font-weight: bold; }
@@ -17,7 +17,7 @@
         #question-text { font-size: 36px; margin: 20px 0; }
         
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 900px; margin: 40px auto; }
-        .opt-box { background: #1e293b; padding: 20px; font-size: 24px; border-radius: 10px; border: 2px solid #334155; transition: all 0.2s; }
+        .opt-box { background: #1e293b; padding: 20px; font-size: 24px; border: 2px solid #334155; transition: all 0.2s; }
         
         #result-msg { font-size: 40px; margin-top: 20px; font-weight: bold; min-height: 80px; }
         .success { color: #4ade80; } .fail { color: #ef4444; }
@@ -26,7 +26,7 @@
         /* SCOREBOARD FIN */
         #scoreboard { display: none; text-align: center; margin-top: 100px; }
         .score-box { display: flex; justify-content: center; gap: 50px; margin-top: 50px; }
-        .score-card { background: #1e293b; padding: 40px; border-radius: 15px; width: 300px; }
+        .score-card { background: #1e293b; padding: 40px; width: 300px; }
         .score-red { border: 4px solid #ef4444; } .score-blue { border: 4px solid #3b82f6; }
         .score-number { font-size: 80px; font-weight: bold; margin: 20px 0; }
 
@@ -91,7 +91,7 @@
     </div>
 
     <div id="scoreboard">
-        <h1 style="font-size: 60px;">🏁 SIMULATION TERMINÉE 🏁</h1>
+        <h1 style="font-size: 60px;">SIMULATION TERMINÉE</h1>
         <div class="score-box">
             <div class="score-card score-red">
                 <h2>RED TEAM</h2>
@@ -121,7 +121,7 @@
         </div>
 
         <div class="anim-window" id="win-soc">
-            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> SafeTech SIEM (Kibana)</div>
+            <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> SafeTech SIEM</div>
             <div id="soc">
                 <div class="k-header">
                     <div style="font-size: 24px; font-weight:bold; color: #38bdf8;">📊 Elastic SIEM | SafeTech</div>
@@ -146,7 +146,7 @@
             <div class="window-header"><div class="dots"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div> Outlook Web</div>
             <div id="mail">
                 <div style="border-bottom: 1px solid #cbd5e1; padding-bottom: 20px; margin-bottom: 20px; font-size: 22px;">
-                    <strong>De :</strong> admin@safe<span style="color:red; font-weight:bold; background:yellow;">rn</span>ech.com<br>
+                    <strong>De :</strong> admin-safetech@g<span style="color:red; font-weight:bold; background:yellow;">rn</span>ail.com<br>
                     <strong>Objet :</strong> URGENT - Réinitialisation de votre mot de passe<br>
                     <strong>Date :</strong> Aujourd'hui, 09:12
                 </div>
@@ -188,13 +188,13 @@
                     
                     if(data.teamTurn === 'red') {
                         document.getElementById('turn-indicator').className = 'turn-red';
-                        document.getElementById('turn-indicator').innerText = "🔥 MISSION : RED TEAM 🔥";
+                        document.getElementById('turn-indicator').innerText = "MISSION : RED TEAM";
                     } else if (data.teamTurn === 'blue') {
                         document.getElementById('turn-indicator').className = 'turn-blue';
-                        document.getElementById('turn-indicator').innerText = "🛡️ MISSION : BLUE TEAM 🛡️";
+                        document.getElementById('turn-indicator').innerText = "MISSION : BLUE TEAM";
                     } else {
                         document.getElementById('turn-indicator').className = 'turn-both';
-                        document.getElementById('turn-indicator').innerText = "🚨 QUESTION BONUS (Toutes les équipes) 🚨";
+                        document.getElementById('turn-indicator').innerText = "QUESTION BONUS (Toutes les équipes)";
                     }
                     
                     document.getElementById('question-text').innerText = data.question.text;
@@ -215,13 +215,13 @@
                     correctBox.style.cssText = "background-color: #064e3b !important; border-color: #4ade80 !important;";
 
                     const rMsg = document.getElementById('result-msg');
-                    const statsHtml = `<span class="stats-msg">📊 ${data.correctCount} joueurs sur ${data.totalVoted} ont trouvé la bonne réponse !</span>`;
+                    const statsHtml = `<span class="stats-msg">${data.correctCount} joueurs sur ${data.totalVoted} ont trouvé la bonne réponse !</span>`;
 
                     if(data.isSuccess) {
-                        rMsg.innerHTML = "✅ Décision validée par la majorité !" + statsHtml;
+                        rMsg.innerHTML = "Décision validée par la majorité !" + statsHtml;
                         rMsg.className = "success";
                     } else {
-                        rMsg.innerHTML = "❌ Échec. Mauvaise décision globale." + statsHtml;
+                        rMsg.innerHTML = "Échec. Mauvaise décision globale." + statsHtml;
                         rMsg.className = "fail";
                     }
                 }
@@ -243,9 +243,9 @@
                     document.getElementById('final-blue').innerText = data.scores.blue;
 
                     let winnerText = document.getElementById('winner-text');
-                    if(data.scores.red > data.scores.blue) { winnerText.innerHTML = "🏆 VICTOIRE DE LA <span style='color:#ef4444'>RED TEAM</span> ! L'entreprise est compromise."; }
-                    else if(data.scores.blue > data.scores.red) { winnerText.innerHTML = "🏆 VICTOIRE DE LA <span style='color:#3b82f6'>BLUE TEAM</span> ! Le système a tenu bon."; }
-                    else { winnerText.innerHTML = "🤝 ÉGALITÉ PARFAITE !"; }
+                    if(data.scores.red > data.scores.blue) { winnerText.innerHTML = "VICTOIRE DE LA <span style='color:#ef4444'>RED TEAM</span> ! L'entreprise est compromise."; }
+                    else if(data.scores.blue > data.scores.red) { winnerText.innerHTML = "VICTOIRE DE LA <span style='color:#3b82f6'>BLUE TEAM</span> ! Le système a tenu bon."; }
+                    else { winnerText.innerHTML = "ÉGALITÉ PARFAITE !"; }
                 }
             }
         });
@@ -321,17 +321,58 @@
             } 
             
             else if (type === 'sqli') {
-                webWin.style.display = "flex"; urlBar.innerText = "https://safetech.com/admin";
-                web.innerHTML = `<div class="st-nav"><div>SafeTech Intranet</div></div><div class="st-form"><h2 style="color:#0f172a; text-align:center;">Accès Restreint</h2><input class="fake-input" value="Username"><input class="fake-input" type="password" value="Password"><button class="st-btn" style="width:100%; margin-top:20px;">Connexion</button></div>`;
-                await delay(2000);
-                document.querySelectorAll('.fake-input')[0].value = "admin' OR '1'='1";
-                await delay(1000);
-                web.innerHTML = `<div style="padding:40px; text-align:center; color:red;"><h2>Internal Server Error (500)</h2><p>SQL Syntax Error near ''1'='1'</p></div>`;
-                await delay(1500);
-                web.innerHTML = `<div class="st-nav"><div>SafeTech Intranet</div></div><div class="st-form"><h2 style="color:#0f172a; text-align:center;">Accès Restreint</h2><input class="fake-input" value="admin' OR 1=1 --"><input class="fake-input" type="password" value="***"><button class="st-btn" style="width:100%; margin-top:20px;">Connexion</button></div>`;
-                await delay(1500);
-                web.innerHTML = `<div class="st-nav"><div>SafeTech Admin Panel</div><div>Deconnexion</div></div><div class="st-content"><h1 style="color:#22c55e;">🔓 Bienvenue, Administrator</h1><p>Statut du serveur: En ligne</p><br><div style="text-align:left; background:#e2e8f0; padding:20px; border-radius:5px;">📁 Fichiers système<br>📁 Base de données clients<br>📁 Configuration Secrète</div></div>`;
-            } 
+                webWin.style.display = "flex"; 
+                urlBar.innerText = "https://safetech.com/admin";
+                
+                // Fonction pour afficher le formulaire (permet de le recharger si on fait une erreur)
+                const loadForm = (errorMsg = "") => {
+                    web.innerHTML = `
+                        <div class="st-nav"><div>SafeTech Intranet</div></div>
+                        <div class="st-form">
+                            <h2 style="color:#0f172a; text-align:center;">Accès Restreint</h2>
+                            <input class="fake-input" id="sqli-user" placeholder="Username" autocomplete="off">
+                            <input class="fake-input" id="sqli-pass" type="password" placeholder="Password">
+                            <button class="st-btn" id="sqli-btn" style="width:100%; margin-top:20px; cursor:pointer;">Connexion</button>
+                            ${errorMsg}
+                        </div>`;
+                    
+                    // On attend que tu cliques sur le bouton "Connexion"
+                    document.getElementById('sqli-btn').onclick = async () => {
+                        const userVal = document.getElementById('sqli-user').value;
+                        
+                        // 1. Succès : Si la payload contient une apostrophe, un OR et un commentaire (-- ou #)
+                        if (userVal.includes("'") && userVal.toLowerCase().includes("or") && (userVal.includes("--") || userVal.includes("#"))) {
+                            web.innerHTML = `
+                                <div class="st-nav"><div>SafeTech Admin Panel</div><div>Deconnexion</div></div>
+                                <div class="st-content">
+                                    <h1 style="color:#22c55e;">🔓 Bienvenue, Administrator</h1>
+                                    <p>Statut du serveur: En ligne</p><br>
+                                    <div style="text-align:left; background:#e2e8f0; padding:20px; border-radius:5px; font-size:20px;">
+                                        📁 Fichiers système<br>📁 Base de données clients<br>📁 Configuration Secrète
+                                    </div>
+                                </div>`;
+                        }
+                        // 2. Erreur 500 : Si l'injection est incomplète (pas de commentaire pour ignorer la suite de la requête)
+                        else if (userVal.includes("'") && userVal.toLowerCase().includes("or")) {
+                            web.innerHTML = `
+                                <div style="padding:40px; text-align:center; color:red;">
+                                    <h2>Internal Server Error (500)</h2>
+                                    <p>SQL Syntax Error near ''1'='1'</p>
+                                </div>`;
+                            // On attend 2.5 secondes puis on remet le formulaire pour te laisser corriger
+                            await delay(2500);
+                            loadForm(); 
+                        } 
+                        // 3. Échec classique : Mauvais mot de passe normal
+                        else {
+                            loadForm(`<div style="color:red; text-align:center; margin-top:15px; font-weight:bold;">Identifiants incorrects</div>`);
+                        }
+                    };
+                };
+
+                // On lance l'affichage du formulaire la première fois
+                loadForm(); 
+            }
             
             else if (type === 'soc-sqli') {
                 socWin.style.display = "grid"; sStatus.innerText = "● Shield Active";
@@ -349,7 +390,7 @@
                 term.innerHTML += "<span class='term-red'>Connection received on 185.22.44.1 49302!</span><br>www-data@safetech:/var/www/html$ "; await delay(1000);
                 term.innerHTML += "ls -la<br>-rw-r--r-- 1 www-data www-data  219 index.php<br>-rw-r--r-- 1 www-data www-data  140 about.php<br><span style='color:yellow'>-rw------- 1 root     root       45 credentialSecure.txt</span><br>"; await delay(1500);
                 term.innerHTML += "www-data@safetech:/var/www/html$ cat credentialSecure.txt<br>"; await delay(1000);
-                term.innerHTML += "<span class='term-red' style='font-weight:bold; font-size:24px;'>[SYSTEM ROOT CREDENTIALS]<br>USER: root<br>PASS: S@f3T3ch_Admin_2026_!!</span><br>";
+                term.innerHTML += "<span class='term-red' style='font-size:18px;'>Si vous perdez le mot de passe, utilisez ceci:<br><br>root:S@f3T3ch_Admin_2026_!!</span><br>";
             } 
             
             else if (type === 'soc-priv') {

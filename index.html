@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body { background-color: #020617; color: white; font-family: sans-serif; text-align: center; padding: 20px; margin:0; }
-        .btn { width: 100%; padding: 20px; margin: 10px 0; font-size: 18px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { width: 100%; padding: 20px; margin: 10px 0; font-size: 18px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .red-team { background-color: #ef4444; color: white; }
         .blue-team { background-color: #3b82f6; color: white; }
         .btn-option { background-color: #1e293b; color: #22d3ee; border: 2px solid #334155; }
@@ -28,19 +28,19 @@
 
     <div id="lobby">
         <h2>Choisissez votre division :</h2>
-        <button class="btn red-team" onclick="joinTeam('red')">☠️ RED TEAM (Attaque)</button>
-        <button class="btn blue-team" onclick="joinTeam('blue')">🛡️ BLUE TEAM (Défense)</button>
+        <button class="btn red-team" onclick="joinTeam('red')">RED TEAM [ Attaque ]</button>
+        <button class="btn blue-team" onclick="joinTeam('blue')">BLUE TEAM [ Défense ]</button>
     </div>
 
     <div id="game" class="hidden">
         <h2 id="team-display"></h2>
-        <div id="waiting-msg">En attente des ordres du commandant...</div>
+        <div id="waiting-msg">En attente des ordres du system...</div>
         
         <div id="voting-area" class="hidden">
             <h3 style="color:#f8fafc" id="action-title">Sélectionnez une action :</h3>
             
             <div id="mobile-mail" class="hidden">
-                <strong>De :</strong> admin@safe<span class="highlight">rn</span>ech.com<br>
+                <strong>De :</strong> admin-safetech@g<span>rm</span>ail.com<br>
                 <strong>Objet :</strong> URGENT - Mot de passe<br><br>
                 Une activité suspecte a été détectée. Veuillez cliquer ci-dessous pour confirmer votre identité.<br>
                 <button style="background:#2563eb; color:white; border:none; padding:8px; margin-top:10px; width:100%; border-radius:4px;">Sécuriser mon compte</button>
@@ -102,7 +102,7 @@
                     let lastVotedQIndex = parseInt(localStorage.getItem('lastVotedQIndex'));
 
                     if (lastVotedQIndex === currentQIndex) {
-                        showWaiting("✅ <strong>Action déjà validée !</strong><br><br>Regardez l'écran principal.");
+                        showWaiting("<strong>Action déjà validée !</strong><br><br>Regardez l'écran principal.");
                     } 
                     else if(data.teamTurn === myTeam || data.teamTurn === 'both') {
                         document.getElementById('waiting-msg').classList.add('hidden');
@@ -110,7 +110,7 @@
                         document.getElementById('btn-validate').classList.add('hidden');
                         selectedChoice = -1;
                         
-                        document.getElementById('action-title').innerText = data.teamTurn === 'both' ? "🚨 QUESTION BONUS 🚨" : "Sélectionnez une action :";
+                        document.getElementById('action-title').innerText = data.teamTurn === 'both' ? "QUESTION BONUS" : "Sélectionnez une action :";
                         
                         // Affichage du mail pour la question bonus
                         if(data.teamTurn === 'both') {
@@ -151,7 +151,7 @@
             if(selectedChoice !== -1) {
                 localStorage.setItem('lastVotedQIndex', currentQIndex);
                 client.publish(topic, JSON.stringify({ type: 'VOTE', team: myTeam, id: clientId, choice: selectedChoice }));
-                showWaiting("✅ <strong>Action envoyée !</strong><br><br>Regardez l'écran principal en attendant les autres joueurs.");
+                showWaiting("<strong>Action envoyée !</strong><br><br>Regardez l'écran principal.");
             }
         }
     </script>
